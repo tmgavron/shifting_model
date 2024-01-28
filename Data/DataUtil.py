@@ -132,6 +132,9 @@ def infieldFilter(df):
     df = df[df["PitchCall"].str.contains("InPlay")]
     df = df[df["TaggedHitType"].str.contains("GroundBall")]
     df = df[df["Direction"].between(-45, 45)]
+    bins = [-45, -27, -9, 9, 27, 45]
+    labels = [1,2,3,4,5]
+    df['FieldSlice'] = pd.cut(df['Direction'], bins=bins, labels=labels)
     # df = df[df["HitLaunchConfidence"].isin(["Medium","High"])]
     return df
 
@@ -146,6 +149,9 @@ def outfieldFilter(df):
     df = df[df["TaggedHitType"].isin(["FlyBall","LineDrive"])]
     df = df[df["Distance"] >= 150]
     df = df[df["Bearing"].between(-45, 45)]
+    bins = [-45, -27, -9, 9, 27, 45]
+    labels = [1,2,3,4,5]
+    df['FieldSlice'] = pd.cut(df['Bearing'], bins=bins, labels=labels)
     # df = df[df["HitLandingConfidence"].isin(["Medium","High"])]
     return df
 

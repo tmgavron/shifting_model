@@ -131,7 +131,8 @@ def infieldFilter(df):
     df = df[["PitcherId","BatterId","TaggedPitchType","PitchCall","TaggedHitType","Direction","HitLaunchConfidence"]]
     df = df[df["PitchCall"].str.contains("InPlay")]
     df = df[df["TaggedHitType"].str.contains("GroundBall")]
-    df = df[df["HitLaunchConfidence"].isin(["Medium","High"])]
+    df = df[-45 <= df["Direction"] <= 45]
+    # df = df[df["HitLaunchConfidence"].isin(["Medium","High"])]
     return df
 
 # This function filters the given Pandas DataFrame specifically for outfield data fields. These fields are used just for initial testing and
@@ -144,7 +145,8 @@ def outfieldFilter(df):
     df = df[df["PitchCall"].str.contains("InPlay")]
     df = df[df["TaggedHitType"].isin(["FlyBall","LineDrive"])]
     df = df[df["Distance"] >= 150]
-    df = df[df["HitLandingConfidence"].isin(["Medium","High"])]
+    df = df[-45 <= df["Bearing"] <= 45]
+    # df = df[df["HitLandingConfidence"].isin(["Medium","High"])]
     return df
 
 

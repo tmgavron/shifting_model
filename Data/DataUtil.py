@@ -3,6 +3,7 @@ import matplotlib.pyplot as matplt
 import math
 import csv
 import random
+import pandas as pd
 
 # Reads the data from the given filename and returns it as a list in the following format:
 
@@ -56,10 +57,10 @@ def getRawData(filename):
 
         # Create List of column indexes from column name
         indexDic = {}
-        listOfCols = ["PitchNo", "PitchUID", "PitcherThrows", "BatterSide", "TaggedPitchType", "AutoPitchType", "PitchCall", "TaggedHitType", "PlayResult", 
+        listOfCols = ["PitchNo", "PitchUID", "PitcherId", "BatterId", "PitcherThrows", "BatterSide", "TaggedPitchType", "AutoPitchType", "PitchCall", "TaggedHitType", "PlayResult", 
                          "RelSpeed", "VertRelAngle", "HorzRelAngle", "SpinRate", "SpinAxis", "InducedVertBreak", "PlateLocHeight", "PlateLocSide",
                          "ZoneSpeed", "VertApprAngle", "HorzApprAngle", "ExitSpeed", "Angle", "HitSpinRate", "PositionAt110X", "PositionAt110Y",
-                         "PositionAt110Z", "Distance", "Direction", "Bearing"]
+                         "PositionAt110Z", "Distance", "Direction", "Bearing", "HitLaunchConfidence", "HitLandingConfidence"]
         for colName in listOfCols:
             indexDic[colName] = find_column_index(filename, colName)
 
@@ -68,6 +69,8 @@ def getRawData(filename):
             # ID's:
             raw_row.append(str(row[indexDic["PitchNo"]])) # PitchNo
             raw_row.append(str(row[indexDic["PitchUID"]])) # PitchUID
+            raw_row.append(str(row[indexDic["PitcherId"]])) # PitchId
+            raw_row.append(str(row[indexDic["BatterId"]])) # BatterId
             # Setup Info:
             raw_row.append(str(row[indexDic["PitcherThrows"]])) # PitcherThrows
             raw_row.append(str(row[indexDic["BatterSide"]])) # BatterSide
@@ -98,11 +101,52 @@ def getRawData(filename):
             raw_row.append(safe_float_conversion(row[indexDic["Distance"]])) # Distance
             # Labels:
             raw_row.append(safe_float_conversion(row[indexDic["Direction"]])) # Direction (for infield ground balls)
-            raw_row.append(safe_float_conversion(row[indexDic["Bearing"]])) # Bearing (for outfield pop flys etc)
+            raw_row.append(safe_float_conversion(row[indexDic["Bearing"]])) # Bearing (for outfield flys balls etc)
+            # Confidence:
+            raw_row.append(str(row[indexDic["HitLaunchConfidence"]])) # Confidence of Direction being right (for infield ground balls)
+            raw_row.append(str(row[indexDic["HitLandingConfidence"]])) # Confidence of Bearing being right (for outfield fly balls etc)
 
             # Add Datapoint
             raw_data.append(raw_row)
     return raw_data
+
+# This function converts the Raw Data(from API) into a Pandas DataFrame for easy filtering and manipulation. Also easy to use inside of ML models. 
+# Inputs:
+    # data_list: a list of data ideally received from getRawData()
+# Output: the converted DataFrame
+def convertRawToDataFrame(data_list):
+    listOfCols = ["PitchNo", "PitchUID", "PitcherId", "BatterId", "PitcherThrows", "BatterSide", "TaggedPitchType", "AutoPitchType", "PitchCall", "TaggedHitType", "PlayResult", 
+                         "RelSpeed", "VertRelAngle", "HorzRelAngle", "SpinRate", "SpinAxis", "InducedVertBreak", "PlateLocHeight", "PlateLocSide",
+                         "ZoneSpeed", "VertApprAngle", "HorzApprAngle", "ExitSpeed", "Angle", "HitSpinRate", "PositionAt110X", "PositionAt110Y",
+                         "PositionAt110Z", "Distance", "Direction", "Bearing", "HitLaunchConfidence", "HitLandingConfidence"]
+    fieldDataFrame = pd.DataFrame(data_list, columns=listOfCols)
+    return fieldDataFrame
+
+# This function filters the given Pandas DataFrame specifically for infield data fields. These fields are used just for initial testing and
+#   training of the Models
+# Inputs:
+    # df: the fieldDataFrame
+# Output: the filtered DataFrame
+def infieldFilter(df):
+    df = df[["PitcherId","BatterId","TaggedPitchType","PitchCall","TaggedHitType","Direction","HitLaunchConfidence"]]
+    df = df[df["PitchCall"].str.contains("InPlay")]
+    df = df[df["TaggedHitType"].str.contains("GroundBall")]
+    df = df[df["HitLaunchConfidence"].isin(["Medium","High"])]
+    return df
+
+# This function filters the given Pandas DataFrame specifically for outfield data fields. These fields are used just for initial testing and
+#   training of the Models
+# Inputs:
+    # df: the fieldDataFrame
+# Output: the filtered DataFrame
+def outfieldFilter(df):
+    df = df[["PitcherId","BatterId","TaggedPitchType","PitchCall","TaggedHitType","Bearing","Distance","HitLandingConfidence"]]
+    df = df[df["PitchCall"].str.contains("InPlay")]
+    df = df[df["TaggedHitType"].isin(["FlyBall","LineDrive"])]
+    df = df[df["Distance"] >= 150]
+    df = df[df["HitLandingConfidence"].isin(["Medium","High"])]
+    return df
+
 
 # This function finds the index of a given column in a dataset
 # Inputs: 

@@ -128,7 +128,7 @@ def convertRawToDataFrame(data_list):
     # df: the fieldDataFrame
 # Output: the filtered DataFrame
 def infieldFilter(df):
-    df = df[["PitcherId","BatterId","TaggedPitchType","PitchCall","TaggedHitType","Direction","HitLaunchConfidence"]]
+    # df = df[["PitcherId","BatterId","TaggedPitchType","PitchCall","TaggedHitType","Direction","HitLaunchConfidence"]]
     df = df[df["PitchCall"].str.contains("InPlay")]
     df = df[df["TaggedHitType"].str.contains("GroundBall")]
     df = df[df["Direction"].between(-45, 45)]
@@ -144,7 +144,7 @@ def infieldFilter(df):
     # df: the fieldDataFrame
 # Output: the filtered DataFrame
 def outfieldFilter(df):
-    df = df[["PitcherId","BatterId","TaggedPitchType","PitchCall","TaggedHitType","Bearing","Distance","HitLandingConfidence"]]
+    # df = df[["PitcherId","BatterId","TaggedPitchType","PitchCall","TaggedHitType","Bearing","Distance","HitLandingConfidence"]]
     df = df[df["PitchCall"].str.contains("InPlay")]
     df = df[df["TaggedHitType"].isin(["FlyBall","LineDrive"])]
     df = df[df["Distance"] >= 150]

@@ -129,13 +129,24 @@ def convertRawToDataFrame(data_list):
 # Output: the filtered DataFrame
 def infieldFilter(df):
     # df = df[["PitcherId","BatterId","TaggedPitchType","PitchCall","TaggedHitType","Direction","HitLaunchConfidence"]]
+    # ^^^ That one was from before decision to do All Hitters vs PitchType
+    df = df[["PitcherThrows", "BatterSide", "TaggedPitchType", "PitchCall", "TaggedHitType", "ZoneSpeed", "PlateLocHeight", "PlateLocSide", "Direction"]]
+    df = df[df["PitcherThrows"].isin(["Left", "Right", "Both"])] # 1, 2, 3 (can remove Both)
+    df["PitcherThrows"] = df["PitcherThrows"].map({"Left":1, "Right":2, "Both":3})
+    df = df[df["BatterSide"].isin(["Left","Right"])] # 1, 2
+    df["BatterSide"] = df["BatterSide"].map({"Left":1, "Right":2})
+    df = df[df["TaggedPitchType"].isin(["Fastball", "Sinker", "Cutter", "Curveball", "Slider", "Changeup", "Splitter", "Knuckleball"])] # 1,2,3,4,5,6,7,8
+    df["TaggedPitchType"] = df["TaggedPitchType"].map({"Fastball":1, "Sinker":2, "Cutter":3, "Curveball":4, "Slider":5, "Changeup":6, "Splitter":7, "Knuckleball":8})
     df = df[df["PitchCall"].str.contains("InPlay")]
     df = df[df["TaggedHitType"].str.contains("GroundBall")]
     df = df[df["Direction"].between(-45, 45)]
     bins = [-45, -27, -9, 9, 27, 45]
     labels = [1,2,3,4,5]
-    df['FieldSlice'] = pd.cut(df['Direction'], bins=bins, labels=labels)
+    df["FieldSlice"] = pd.cut(df["Direction"], bins=bins, labels=labels)
     # df = df[df["HitLaunchConfidence"].isin(["Medium","High"])]
+    # print("--")
+    # print(df)
+    # print("--")
     return df
 
 # This function filters the given Pandas DataFrame specifically for outfield data fields. These fields are used just for initial testing and

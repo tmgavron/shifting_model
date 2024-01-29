@@ -22,7 +22,7 @@ from Logs import logging as logs
     # Decision Tree Model, Training Accuracy, Testing Accuracy
 def runDT(train_x, train_y, test_x, test_y, max_depth, max_features, max_leaf_nodes):
     dt = DecisionTreeClassifier(max_depth=max_depth, max_features=max_features, max_leaf_nodes=max_leaf_nodes)
-       
+    #dt = DecisionTreeClassifier()   
     # Train Model
     print("training decision tree model...")
     dt.fit(train_x, train_y)
@@ -36,6 +36,12 @@ def runDT(train_x, train_y, test_x, test_y, max_depth, max_features, max_leaf_no
 
     y_pred = dt.predict(test_x)
     test_accuracy = get_infield_statistics(test_y, y_pred)
+
+    #logs.writeLog()
+    print(dt.get_depth())
+    print(dt.get_n_leaves())
+    print(dt.predict_proba(test_x)) # returns [0,0,1,0,0]
+    print(accuracy_score(test_y,y_pred))
 
     print("done!")
 

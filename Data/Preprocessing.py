@@ -38,7 +38,7 @@ def dataFiltering():
 # %%
 # Setup Frame for models:
 
-# Basic Model Inputs: (normalize)"PitcherThrows", (normalize)"BatterSide", "TaggedPitchType", (rm)"PitchCall", (rm)"TaggedHitType", "ZoneSpeed", "PlateLocHeight", "PlateLocSide", "Direction"
+# Basic Model Inputs: (normalize)"PitcherThrows", (normalize)"BatterSide", "TaggedPitchType", (rm)"PitchCall", (rm)"TaggedHitType", "ZoneSpeed", "PlateLocHeight", "PlateLocSide", (rm)"Direction"
 
 # filter x data:
 

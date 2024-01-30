@@ -12,7 +12,7 @@ def logDT(model, train_acc, test_acc, train_limit, test_limit):
     weights = [w for w in model.w]
     # lr = model.lr
     # epochs = model.epochs
-
+    
     log = list()
 
     log.append(f"Training Accuracy = {train_acc}")

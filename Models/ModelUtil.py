@@ -5,6 +5,8 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, confusion_matrix
+import pandas as pd
+import numpy as np
 # import modelanalysis as ma
 
 from Logs import logging as logs
@@ -29,7 +31,7 @@ def runDT(train_x, train_y, test_x, test_y, max_depth, max_features, max_leaf_no
     print("done!")
 
     # Model Statistics
-    print("getting statistics...")
+    print("getting statistics...\n")
 
     y_trainPred = dt.predict(train_x)
     train_accuracy = get_infield_statistics(train_y, y_trainPred)
@@ -37,11 +39,63 @@ def runDT(train_x, train_y, test_x, test_y, max_depth, max_features, max_leaf_no
     y_pred = dt.predict(test_x)
     test_accuracy = get_infield_statistics(test_y, y_pred)
 
-    #logs.writeLog()
-    print(dt.get_depth())
-    print(dt.get_n_leaves())
-    print(dt.predict_proba(test_x)) # returns [0,0,1,0,0]
-    print(accuracy_score(test_y,y_pred))
+    # Filtering for Statistics
+    
+    dftrain = train_x.copy()
+    dftrain["FieldSlicePrediction"] = y_trainPred #add to columns
+    dftrain["FieldSliceActual"] = train_y
+    dftrain = dftrain.assign(Correct = lambda x: (x["FieldSliceActual"] == x["FieldSlicePrediction"]))
+    
+    #print(dftrain.groupby(["Correct"]).size())
+
+    dftest = test_x.copy()
+    dftest["FieldSlicePrediction"] = y_pred #add to columns
+    dftest["FieldSliceActual"] = test_y
+    dftest = dftest.assign(Correct = lambda x: (x["FieldSliceActual"] == x["FieldSlicePrediction"]))
+    
+
+    dfall = pd.concat([dftrain, dftest]) # add rows
+
+    #print(dfall.groupby(["FieldSliceActual"]).size())
+    #print(dfall.groupby(["FieldSlicePrediction"]).size())
+    #print(dfall.groupby(["Correct"]).size())
+
+    # Can either leave this code below or essentially switch it all with var=dftrain["FieldSliceActual"].value_counts()[1]
+    dfTestStats = dftest.groupby(["FieldSliceActual"]).size().reset_index()
+    dfTestStats = dfTestStats.rename(columns={"FieldSliceActual":"Field Slice",0:"Count of Actual"})
+    dfTestStats["Count of Predicted"] = dftest.groupby(["FieldSlicePrediction"]).size().reset_index()[0]
+    dftemp = dftest[dftest["Correct"] == True]
+    dfTestStats["Correct"] = dftemp.groupby(["FieldSliceActual"]).size().reset_index()[0]
+
+    dfTrainStats = dftrain.groupby(["FieldSliceActual"]).size().reset_index()
+    dfTrainStats = dfTrainStats.rename(columns={"FieldSliceActual":"Field Slice",0:"Count of Actual"})
+    dfTrainStats["Count of Predicted"] = dftrain.groupby(["FieldSlicePrediction"]).size().reset_index()[0]
+    dftemp = dftrain[dftrain["Correct"] == True]
+    dfTrainStats["Correct"] = dftemp.groupby(["FieldSliceActual"]).size().reset_index()[0]
+
+    print("Decisions Tree Data Splits: train=0.75, test=0.25")
+    print("Decision Tree Depth: " + str(dt.get_depth()))
+    print("Decision Tree Number of Leaves: " + str(dt.get_n_leaves()))
+    print("Decision Tree's Accuracy Score for Predicting on Training Data: " + str('{:.4f}'.format(train_accuracy)))
+    print("Decision Tree's Accuracy Score for Predicting on Test Data: " + str('{:.4f}'.format(test_accuracy)))
+    probs = dt.predict_proba(test_x)
+    colprob = colsum(probs, len(probs[0]), len(probs))
+    colperc = ['{:.2f}'.format(n*100) for n in colprob]
+    print("\nDecision Tree Overall Average Probabilities\n-------------------------------------" )
+    print("Section 1: " + str(colperc[0]) + "%\nSection 2: " + str(colperc[1]) + "%\nSection 3: " + str(colperc[2]) + "%")
+    print("Section 4: " + str(colperc[3]) + "%\nSection 5: " + str(colperc[4]) + "%")
+    print("Decision Tree Field Slice Counts for Training Data\n--------------------------------------------------")
+    print("Section\tTruth\tPrediction")
+    for i in range(dfTrainStats["Field Slice"].size):
+        print(str(dfTrainStats["Field Slice"][i]) +"\t\t"+ str(dfTrainStats["Count of Actual"][i]) +"\t\t"+ str(dfTrainStats["Count of Predicted"][i]))
+    print("Amount Correct: " + str(dftrain["Correct"].value_counts()[True]))
+    print("Amount Incorrect: " + str(dftrain["Correct"].value_counts()[False]))
+    print("Decision Tree Field Slice Counts for Testing Data\n--------------------------------------------------")
+    print("Section\tTruth\tPrediction")
+    for i in range(dfTestStats["Field Slice"].size):
+        print(str(dfTestStats["Field Slice"][i]) +"\t\t"+ str(dfTestStats["Count of Actual"][i]) +"\t\t"+ str(dfTestStats["Count of Predicted"][i]))
+    print("Amount Correct: " + str(dftest["Correct"].value_counts()[True]))
+    print("Amount Incorrect: " + str(dftest["Correct"].value_counts()[False]))
 
     print("done!")
 
@@ -141,6 +195,16 @@ def runSVM(train_x, train_y, test_x, test_y, rC, kernel, degree, gamma, coef0):
     print("done!")
 
     return svm, train_accuracy, test_accuracy
+
+
+def colsum(arr, n, m):
+    coll = [0,0,0,0,0]
+    for i in range(n):
+        su = 0;
+        for j in range(m):
+            su += arr[j][i]
+        coll[i] = su/m
+    return coll 
 
 
 # Function for getting statistics of an infield zone model

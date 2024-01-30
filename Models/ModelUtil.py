@@ -23,7 +23,7 @@ from Logs import logging as logs
 # Ouput:
     # Decision Tree Model, Training Accuracy, Testing Accuracy
 def runDT(train_x, train_y, test_x, test_y, max_depth, max_features, max_leaf_nodes):
-    dt = DecisionTreeClassifier(max_depth=max_depth, max_features=max_features, max_leaf_nodes=max_leaf_nodes)
+    dt = DecisionTreeClassifier(max_depth=max_depth, max_features=max_features, max_leaf_nodes=max_leaf_nodes, class_weight='balanced')
     #dt = DecisionTreeClassifier()   
     # Train Model
     print("training decision tree model...")
@@ -111,7 +111,7 @@ def runDT(train_x, train_y, test_x, test_y, max_depth, max_features, max_leaf_no
 # Ouput:
     # Naive Bayes Model, Training Accuracy, Testing Accuracy
 def runNB(train_x, train_y, test_x, test_y, var_smoothing):
-    nb = GaussianNB(var_smoothing=var_smoothing)
+    nb = GaussianNB(var_smoothing=var_smoothing, class_weight='balanced')
     
     # Train Model
     print("training Naive Bayes model...")
@@ -142,7 +142,7 @@ def runNB(train_x, train_y, test_x, test_y, var_smoothing):
 # Ouput:
     # Logistic Regression Model, Training Accuracy, Testing Accuracy
 def runLogReg(train_x, train_y, test_x, test_y, lr, e):
-    logreg = LogisticRegression(C=lr, max_iter=e)
+    logreg = LogisticRegression(C=lr, max_iter=e, class_weight='balanced')
 
     print("training logistic regression model...")
     logreg.fit(train_x, train_y)
@@ -177,7 +177,7 @@ def runLogReg(train_x, train_y, test_x, test_y, lr, e):
 def runSVM(train_x, train_y, test_x, test_y, rC, kernel, degree, gamma, coef0):
     C = rC  # Regularization parameter
 
-    svm = SVC(C=C, kernel=kernel, degree=degree, gamma=gamma, coef0=coef0)
+    svm = SVC(C=C, kernel=kernel, degree=degree, gamma=gamma, coef0=coef0, class_weight='balanced')
 
     print("training SVM model...")
     svm.fit(train_x, train_y)

@@ -130,7 +130,7 @@ def convertRawToDataFrame(data_list):
 def infieldFilter(df):
     # df = df[["PitcherId","BatterId","TaggedPitchType","PitchCall","TaggedHitType","Direction","HitLaunchConfidence"]]
     # ^^^ That one was from before decision to do All Hitters vs PitchType
-    df = df[["PitcherThrows", "BatterSide", "TaggedPitchType", "PitchCall", "TaggedHitType", "ZoneSpeed", "PlateLocHeight", "PlateLocSide", "Direction"]]
+    # df = df[["PitcherThrows", "BatterSide", "TaggedPitchType", "PitchCall", "TaggedHitType", "ZoneSpeed", "PlateLocHeight", "PlateLocSide", "Direction"]]
     df = df[df["PitcherThrows"].isin(["Left", "Right", "Both"])] # 1, 2, 3 (can remove Both)
     df["PitcherThrows"] = df["PitcherThrows"].map({"Left":1, "Right":2, "Both":3})
     df = df[df["BatterSide"].isin(["Left","Right"])] # 1, 2

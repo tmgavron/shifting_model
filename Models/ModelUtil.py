@@ -111,7 +111,7 @@ def runDT(train_x, train_y, test_x, test_y, max_depth, max_features, max_leaf_no
 # Ouput:
     # Naive Bayes Model, Training Accuracy, Testing Accuracy
 def runNB(train_x, train_y, test_x, test_y, var_smoothing):
-    nb = GaussianNB(var_smoothing=var_smoothing, class_weight='balanced')
+    nb = GaussianNB(var_smoothing=var_smoothing) #class_weight='balanced'
     
     # Train Model
     print("training Naive Bayes model...")

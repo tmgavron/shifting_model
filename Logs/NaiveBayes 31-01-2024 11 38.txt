@@ -1,0 +1,44 @@
+Model Type: NaiveBayes
+
+Training Size = 320
+Testing Size = 107
+
+Training Accuracy = 0.39375
+Testing Accuracy = 0.2803738317757009
+
+Hyper-Parameters: 
+
+Var Smoothing: 1e-09
+
+Accuracy Score for Predicting on Training Data: 0.3937
+Accuracy Score for Predicting on Test Data: 0.2804
+
+Overall Average Probabilities
+-------------------------------------
+Section 1: 20.74%
+Section 2: 23.55%
+Section 3: 21.88%
+Section 4: 22.09%
+Section 5: 11.74%
+
+Field Slice Counts for Training Data
+--------------------------------------------------
+Section	Truth	Prediction
+1		62		101
+2		90		110
+3		74		8
+4		65		75
+5		29		26
+Amount Correct: 126
+Amount Incorrect: 194
+
+Field Slice Counts for Testing Data
+--------------------------------------------------
+Section	Truth	Prediction
+1		19		30
+2		29		35
+3		25		6
+4		24		22
+5		10		14
+Amount Correct: 30
+Amount Incorrect: 77

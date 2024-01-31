@@ -39,67 +39,13 @@ def runDT(train_x, train_y, test_x, test_y, max_depth, max_features, max_leaf_no
     y_pred = dt.predict(test_x)
     test_accuracy = get_infield_statistics(test_y, y_pred)
 
-    # Filtering for Statistics
+    logs.logModel("DecisionTree", dt, train_accuracy, test_accuracy, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+                   ["Max Tree Depth: ", max_depth, "Max Tree Features: ", max_features, "Max Leaf Nodes: ", max_leaf_nodes])
     
-    dftrain = train_x.copy()
-    dftrain["FieldSlicePrediction"] = y_trainPred #add to columns
-    dftrain["FieldSliceActual"] = train_y
-    dftrain = dftrain.assign(Correct = lambda x: (x["FieldSliceActual"] == x["FieldSlicePrediction"]))
-    
-    #print(dftrain.groupby(["Correct"]).size())
-
-    dftest = test_x.copy()
-    dftest["FieldSlicePrediction"] = y_pred #add to columns
-    dftest["FieldSliceActual"] = test_y
-    dftest = dftest.assign(Correct = lambda x: (x["FieldSliceActual"] == x["FieldSlicePrediction"]))
-    
-
-    dfall = pd.concat([dftrain, dftest]) # add rows
-
-    #print(dfall.groupby(["FieldSliceActual"]).size())
-    #print(dfall.groupby(["FieldSlicePrediction"]).size())
-    #print(dfall.groupby(["Correct"]).size())
-
-    # Can either leave this code below or essentially switch it all with var=dftrain["FieldSliceActual"].value_counts()[1]
-    dfTestStats = dftest.groupby(["FieldSliceActual"]).size().reset_index()
-    dfTestStats = dfTestStats.rename(columns={"FieldSliceActual":"Field Slice",0:"Count of Actual"})
-    dfTestStats["Count of Predicted"] = dftest.groupby(["FieldSlicePrediction"]).size().reset_index()[0]
-    dftemp = dftest[dftest["Correct"] == True]
-    dfTestStats["Correct"] = dftemp.groupby(["FieldSliceActual"]).size().reset_index()[0]
-
-    dfTrainStats = dftrain.groupby(["FieldSliceActual"]).size().reset_index()
-    dfTrainStats = dfTrainStats.rename(columns={"FieldSliceActual":"Field Slice",0:"Count of Actual"})
-    dfTrainStats["Count of Predicted"] = dftrain.groupby(["FieldSlicePrediction"]).size().reset_index()[0]
-    dftemp = dftrain[dftrain["Correct"] == True]
-    dfTrainStats["Correct"] = dftemp.groupby(["FieldSliceActual"]).size().reset_index()[0]
-
-    print("Decisions Tree Data Splits: train=0.75, test=0.25")
-    print("Decision Tree Depth: " + str(dt.get_depth()))
-    print("Decision Tree Number of Leaves: " + str(dt.get_n_leaves()))
-    print("Decision Tree's Accuracy Score for Predicting on Training Data: " + str('{:.4f}'.format(train_accuracy)))
-    print("Decision Tree's Accuracy Score for Predicting on Test Data: " + str('{:.4f}'.format(test_accuracy)))
-    probs = dt.predict_proba(test_x)
-    colprob = colsum(probs, len(probs[0]), len(probs))
-    colperc = ['{:.2f}'.format(n*100) for n in colprob]
-    print("\nDecision Tree Overall Average Probabilities\n-------------------------------------" )
-    print("Section 1: " + str(colperc[0]) + "%\nSection 2: " + str(colperc[1]) + "%\nSection 3: " + str(colperc[2]) + "%")
-    print("Section 4: " + str(colperc[3]) + "%\nSection 5: " + str(colperc[4]) + "%")
-    print("Decision Tree Field Slice Counts for Training Data\n--------------------------------------------------")
-    print("Section\tTruth\tPrediction")
-    for i in range(dfTrainStats["Field Slice"].size):
-        print(str(dfTrainStats["Field Slice"][i]) +"\t\t"+ str(dfTrainStats["Count of Actual"][i]) +"\t\t"+ str(dfTrainStats["Count of Predicted"][i]))
-    print("Amount Correct: " + str(dftrain["Correct"].value_counts()[True]))
-    print("Amount Incorrect: " + str(dftrain["Correct"].value_counts()[False]))
-    print("Decision Tree Field Slice Counts for Testing Data\n--------------------------------------------------")
-    print("Section\tTruth\tPrediction")
-    for i in range(dfTestStats["Field Slice"].size):
-        print(str(dfTestStats["Field Slice"][i]) +"\t\t"+ str(dfTestStats["Count of Actual"][i]) +"\t\t"+ str(dfTestStats["Count of Predicted"][i]))
-    print("Amount Correct: " + str(dftest["Correct"].value_counts()[True]))
-    print("Amount Incorrect: " + str(dftest["Correct"].value_counts()[False]))
-
     print("done!")
 
     return dt, train_accuracy, test_accuracy
+
 
 # Run Naive Bayes Training and Testing
 # Inputs:
@@ -126,7 +72,10 @@ def runNB(train_x, train_y, test_x, test_y, var_smoothing):
 
     y_pred = nb.predict(test_x)
     test_accuracy = get_infield_statistics(test_y, y_pred)
-
+    
+    logs.logModel("NaiveBayes", nb, train_accuracy, test_accuracy, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+                   ["Var Smoothing: ", var_smoothing])
+    
     print("done!")
 
     return nb, train_accuracy, test_accuracy
@@ -156,7 +105,11 @@ def runLogReg(train_x, train_y, test_x, test_y, lr, e):
 
     y_pred = logreg.predict(test_x)
     test_accuracy = get_infield_statistics(test_y, y_pred)
-
+    
+    print("logging statistics...")
+    logs.logModel("LogisticRegression", logreg, train_accuracy, test_accuracy, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+                   ["Learning Rate: ", lr, "Epochs: ", e])
+    
     print("done!")
 
     return logreg, train_accuracy, test_accuracy
@@ -177,7 +130,7 @@ def runLogReg(train_x, train_y, test_x, test_y, lr, e):
 def runSVM(train_x, train_y, test_x, test_y, rC, kernel, degree, gamma, coef0):
     C = rC  # Regularization parameter
 
-    svm = SVC(C=C, kernel=kernel, degree=degree, gamma=gamma, coef0=coef0, class_weight='balanced')
+    svm = SVC(C=C, kernel=kernel, degree=degree, gamma=gamma, coef0=coef0, class_weight='balanced', probability=True)
 
     print("training SVM model...")
     svm.fit(train_x, train_y)
@@ -191,7 +144,10 @@ def runSVM(train_x, train_y, test_x, test_y, rC, kernel, degree, gamma, coef0):
 
     y_pred = svm.predict(test_x)
     test_accuracy = get_infield_statistics(test_y, y_pred)
-
+    
+    logs.logModel("SVM", svm, train_accuracy, test_accuracy, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+                   ["Regularization Constant: ", rC, "Kernel Type: ", kernel, "Kernel Degree", degree, "Kernel Coefficient (gamma): ", gamma, "Independent Term in Kernel (coef0): ", coef0])
+    
     print("done!")
 
     return svm, train_accuracy, test_accuracy

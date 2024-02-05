@@ -189,3 +189,20 @@ def safe_float_conversion(value):
         return float(value)
     except ValueError:
         return float('nan')  # or use None if you prefer
+    
+# This function normalizes the given DataFrame
+# Input: DataFrame to normalize
+# Output: normalized DataFrame
+def normalize(df):
+    result = df.copy()
+    for feature_name in df.columns:
+        max_value = df[feature_name].max()
+        min_value = df[feature_name].min()
+        result[feature_name] = (df[feature_name] - min_value) / (max_value - min_value)
+    return result
+
+def clamp01(df):
+    result = df.copy()
+    for feature_name in df.columns:
+        result[feature_name] = df[feature_name].clip(0, 1)
+    return result

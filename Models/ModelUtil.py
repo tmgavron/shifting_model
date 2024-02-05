@@ -7,6 +7,7 @@ from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, confusion_matrix
 import pandas as pd
 import numpy as np
+from sklearn.model_selection import KFold
 # import modelanalysis as ma
 
 from Logs import logging as logs

@@ -40,6 +40,7 @@ def runDT(train_x, train_y, test_x, test_y, max_depth, max_features, max_leaf_no
     y_pred = dt.predict(test_x)
     test_accuracy = get_infield_statistics(test_y, y_pred)
 
+    # CONFIG (add debug/print mode)
     logs.logModel("DecisionTree", dt, train_accuracy, test_accuracy, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
                    ["Max Tree Depth: ", max_depth, "Max Tree Features: ", max_features, "Max Leaf Nodes: ", max_leaf_nodes])
     

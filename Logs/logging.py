@@ -183,7 +183,6 @@ def printModel(modelType, model, train_acc, test_acc, data, params):
     print("Amount Correct: " + str(dftest["Correct"].value_counts()[True]))
     print("Amount Incorrect: " + str(dftest["Correct"].value_counts()[False]))
 
-    writeLog(log, modelType)
 
 
 def colsum(arr, n, m):

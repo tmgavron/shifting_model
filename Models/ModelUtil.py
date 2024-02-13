@@ -78,6 +78,9 @@ def runDT(train_x, train_y, test_x, test_y, max_depth, max_features, max_leaf_no
     logs.logModel("DecisionTree", dt, train_accuracy, test_accuracy, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
                    ["Max Tree Depth: ", max_depth, "Max Tree Features: ", max_features, "Max Leaf Nodes: ", max_leaf_nodes])
     
+    logs.printModel("DecisionTree", dt, train_accuracy, test_accuracy, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+                   ["Max Tree Depth: ", max_depth, "Max Tree Features: ", max_features, "Max Leaf Nodes: ", max_leaf_nodes])
+    
     print("done!")
 
     return dt, train_accuracy, test_accuracy
@@ -112,6 +115,9 @@ def runNB(train_x, train_y, test_x, test_y, var_smoothing):
     logs.logModel("NaiveBayes", nb, train_accuracy, test_accuracy, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
                    ["Var Smoothing: ", var_smoothing])
     
+    logs.printModel("NaiveBayes", nb, train_accuracy, test_accuracy, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+                   ["Var Smoothing: ", var_smoothing])
+    
     print("done!")
 
     return nb, train_accuracy, test_accuracy
@@ -144,6 +150,9 @@ def runLogReg(train_x, train_y, test_x, test_y, lr, e):
     
     print("logging statistics...")
     logs.logModel("LogisticRegression", logreg, train_accuracy, test_accuracy, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+                   ["Learning Rate: ", lr, "Epochs: ", e])
+    
+    logs.printModel("LogisticRegression", logreg, train_accuracy, test_accuracy, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
                    ["Learning Rate: ", lr, "Epochs: ", e])
     
     print("done!")
@@ -184,6 +193,9 @@ def runSVM(train_x, train_y, test_x, test_y, rC, kernel, degree, gamma, coef0):
     logs.logModel("SVM", svm, train_accuracy, test_accuracy, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
                    ["Regularization Constant: ", rC, "Kernel Type: ", kernel, "Kernel Degree", degree, "Kernel Coefficient (gamma): ", gamma, "Independent Term in Kernel (coef0): ", coef0])
     
+    logs.printModel("SVM", svm, train_accuracy, test_accuracy, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+                   ["Regularization Constant: ", rC, "Kernel Type: ", kernel, "Kernel Degree", degree, "Kernel Coefficient (gamma): ", gamma, "Independent Term in Kernel (coef0): ", coef0])
+
     print("done!")
 
     return svm, train_accuracy, test_accuracy

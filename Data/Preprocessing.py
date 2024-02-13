@@ -21,7 +21,10 @@ import pandas
 def dataProcessing():
     # 1) Read Data from file:
     importlib.reload(DataUtil)
-    rawData = DataUtil.getRawData("Data/TrackMan_NoStuff_Master.csv")
+    # small dataset CONFIG
+    # rawData = DataUtil.getRawData("Data/TrackMan_NoStuff_Master.csv")
+    # full dataset CONFIG
+    rawData = DataUtil.getRawData("Data/combined_dataset.csv")
 
     # 2) Create datasets from the data
     fieldDataFrame = DataUtil.convertRawToDataFrame(rawData)

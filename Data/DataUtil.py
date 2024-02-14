@@ -4,6 +4,128 @@ import math
 import csv
 import random
 import pandas as pd
+import configparser
+from ftplib import FTP
+from pathlib import Path
+from io import BytesIO
+
+config = configparser.ConfigParser()
+config.read('Data//config.ini')
+
+def getData():  
+    df = pd.DataFrame()
+    if("True" in config['DATA']['RawData']):
+        pass
+    elif ("True" in config['DATA']['FTP_API']):
+        df = getFTPData()
+    elif ("True" in config['DATA']['RawData']):
+        temp = getRawData("Data/TrackMan_NoStuff_Master.csv")
+        df = convertRawToDataFrame(temp)
+    elif ("True" in config['DATA']['FileZillaCSV']):
+        df = pd.read_csv('combined_dataset.csv')
+    return df
+
+
+def getFTPData():
+    dates = config['FTP']['EarliestMonth']+"-"+config['FTP']['EarliestDay']+"-"+config['FTP']['EarliestYear']+"_"+config['FTP']['LatestMonth']+"-"+config['FTP']['LatestDay']+"-"+config['FTP']['LatestYear']
+    my_pitchfile = Path("./Data/PitchData/PitchData_"+dates+".pkl")
+    my_positionfile = Path("./Data/PositionData/PositionData_"+dates+".pkl")
+    if (my_pitchfile.exists() and my_positionfile.exists()):
+        combinedPitchDF = pd.read_pickle("./Data/PitchData/PitchData_"+dates+".pkl")
+        combinedPositionDF = pd.read_pickle("./Data/PositionData/PositionData_"+dates+".pkl")  
+    else:
+        ftp = FTP('ftp.trackmanbaseball.com')         # connect to host
+        ftp.login(user='Auburn',passwd='kA#R2,KNAP')  # given user and passwd
+        #ftp = FTP(host=config['FTP']['ServerName'])  # should be able to use these two lines instead of hardcoding but
+        #ftp.login(user=config['FTP']['UserName'],passwd=config['FTP']['Password']) # it is not working for some reason 
+        ftp.cwd('v3') # change into "v3" directory
+
+        combinedPitchDF = pd.DataFrame()    # initialize dataframes
+        combinedPositionDF = pd.DataFrame()
+
+        yearslistall = ftp.nlst() # lists out files and folders in current directory
+        # pairs down list so that it is within the constraints given in config file
+        yearslist = [year for year in yearslistall if int(year) >= int(config['FTP']['EarliestYear']) and int(year) <= int(config['FTP']['LatestYear'])]
+        print(yearslist)
+        for year in yearslist:
+            ftp.cwd(year)
+            monthslistall = ftp.nlst()
+            monthslist = monthslistall
+            if (int(year) == int(config['FTP']['EarliestYear'])):
+                monthslist = [month for month in monthslistall if int(month) >= int(config['FTP']['EarliestMonth'])]
+            if (int(year) == int(config['FTP']['LatestYear'])):
+                monthslist = [month for month in monthslistall if int(month) <= int(config['FTP']['LatestMonth'])]
+            monthslistall = monthslist
+            print(monthslistall)
+            for month in monthslistall:
+                ftp.cwd(month)
+                dayslistall = ftp.nlst()
+                dayslist = dayslistall
+                if (int(month) == int(config['FTP']['EarliestMonth'])):
+                    dayslist = [day for day in dayslistall if int(day) >= int(config['FTP']['EarliestDay'])]
+                if (int(month) == int(config['FTP']['LatestMonth'])):
+                    dayslist = [day for day in dayslistall if int(day) <= int(config['FTP']['LatestDay'])]
+                dayslistall = dayslist
+                print(dayslistall)
+                for day in dayslistall:
+                    ftp.cwd(day+'//CSV')
+                    filelist = ftp.nlst()
+                    temp = pd.DataFrame()
+                    for file in filelist:
+                        if '.csv' in file and 'position' not in file:
+                            flo = BytesIO()
+                            ftp.retrbinary('RETR ' + file, flo.write)
+                            flo.seek(0)
+                            print(file)
+                            #temp = pd.read_fwf(flo)
+                            try:
+                                temp = pd.read_csv(flo) # read file into pandas df
+                            except:
+                                pass
+                            print(temp.shape)
+                            if (temp.shape[1] == 167 and temp.shape[0] > 0):
+                                print("yes - 167")
+                                if (combinedPitchDF.empty):
+                                    combinedPitchDF = temp.copy()
+                                else:
+                                    combinedPitchDF = pd.concat([combinedPitchDF, temp], ignore_index=True)
+                            else:
+                                print("no")
+                        elif '.csv' in file and 'position' in file:
+                            ftp.retrbinary('RETR ' + file, flo.write) # retrieve binary data transferer
+                            flo.seek(0) # goes back to start of file
+                            print(file)
+                            #temp = pd.read_fwf(flo)
+                            try:
+                                temp = pd.read_csv(flo) # read file into pandas df
+                            except:
+                                pass
+                            print(temp.shape)
+                            if (temp.shape[1] == 29 and temp.shape[0] > 0):
+                                print("yes")
+                                if (combinedPositionDF.empty):
+                                    combinedPositionDF = temp.copy()
+                                else:
+                                    combinedPositionDF = pd.concat([combinedPositionDF, temp], ignore_index=True)
+                            else:
+                                print("no")
+                    ftp.cwd('../../')
+                ftp.cwd('../')
+            ftp.cwd('../')
+        ftp.quit()
+
+        print("combinedPitchDF")
+        print(combinedPitchDF)
+        print("combinedPositionDF")
+        print(combinedPositionDF)
+
+        if ("True" in config['DATA']['Pickle']):
+            combinedPitchDF.to_pickle("./Data/PitchData/PitchData_"+dates+".pkl")
+            combinedPositionDF.to_pickle("./Data/PositionData/PositionData_"+dates+".pkl")
+        # add logging for what is saved off
+
+    return combinedPitchDF # combinedPositionDF not returned yet but can be used later on
+
 
 # Reads the data from the given filename and returns it as a list in the following format:
 

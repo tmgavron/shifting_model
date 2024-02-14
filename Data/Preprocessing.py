@@ -17,18 +17,14 @@ import importlib
 # %%
 
 def dataFiltering():
-    # 1) Read Data from file:
+    # 1) Read Data from file into DataFrame:
     importlib.reload(DataUtil)
-    # small dataset CONFIG
-    # rawData = DataUtil.getRawData("Data/TrackMan_NoStuff_Master.csv")
-    # full dataset CONFIG
-    rawData = DataUtil.getRawData("Data/combined_dataset.csv")
+    fieldDataFrame = DataUtil.getData()
+    print("fieldDataFrame")
+    print(fieldDataFrame.columns)
+    print(fieldDataFrame)
 
-    # 2) Create datasets from the data
-    fieldDataFrame = DataUtil.convertRawToDataFrame(rawData)
-    #print(fieldDataFrame.head())
-
-    # a) Filter for infield/outfield sets
+    # 2) Create/Filter infield/outfield datasets from the data
     infieldDataFrame = DataUtil.infieldFilter(fieldDataFrame)
     #print(infieldDataFrame.head())
     #print(infieldDataFrame.shape)

@@ -8,10 +8,11 @@ from sklearn.metrics import accuracy_score, confusion_matrix
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import KFold
-# import modelanalysis as ma
-
+import configparser
 from Logs import logging as logs
 
+config = configparser.ConfigParser()
+config.read('Data//config.ini')
 # Run Decision Tree Training and Testing
 # Inputs:
     # train_x
@@ -24,6 +25,8 @@ from Logs import logging as logs
 # Ouput:
     # Decision Tree Model, Training Accuracy, Testing Accuracy
 def runDT(train_x, train_y, test_x, test_y, max_depth, max_features, max_leaf_nodes):
+    if (config['MODELS']['DTC'] == False):
+        return None, None, None
     dt = DecisionTreeClassifier(max_depth=max_depth, max_features=max_features, max_leaf_nodes=max_leaf_nodes, class_weight='balanced')
     #dt = DecisionTreeClassifier()   
     # Train Model
@@ -62,6 +65,8 @@ def runDT(train_x, train_y, test_x, test_y, max_depth, max_features, max_leaf_no
 # Ouput:
     # Naive Bayes Model, Training Accuracy, Testing Accuracy
 def runNB(train_x, train_y, test_x, test_y, var_smoothing):
+    if (config['MODELS']['NB'] == False):
+        return None, None, None
     nb = GaussianNB(var_smoothing=var_smoothing) #class_weight='balanced'
     
     # Train Model
@@ -99,6 +104,9 @@ def runNB(train_x, train_y, test_x, test_y, var_smoothing):
 # Ouput:
     # Logistic Regression Model, Training Accuracy, Testing Accuracy
 def runLogReg(train_x, train_y, test_x, test_y, lr, e):
+    if (config['MODELS']['LR'] == False):
+        return None, None, None
+    
     logreg = LogisticRegression(C=lr, max_iter=e, class_weight='balanced')
 
     print("training logistic regression model...")
@@ -139,6 +147,9 @@ def runLogReg(train_x, train_y, test_x, test_y, lr, e):
 # Ouput:
     # SVM Model, Training Accuracy, Testing Accuracy
 def runSVM(train_x, train_y, test_x, test_y, rC, kernel, degree, gamma, coef0):
+    if (config['MODELS']['SVM'] == False):
+        return None, None, None
+    
     C = rC  # Regularization parameter
 
     svm = SVC(C=C, kernel=kernel, degree=degree, gamma=gamma, coef0=coef0, class_weight='balanced', probability=True)

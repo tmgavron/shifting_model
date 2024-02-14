@@ -9,7 +9,7 @@ def writeLog(log, name="", descriptor=".txt"):
             file.write(row)
             file.write("\n")
 
-def logModel(modelType, model, train_acc, test_acc, data, params):
+def logModel(modelType, model, train_stats, test_stats, data, params):
     # weights = [w for w in model.w]
     
     # log.append("Weights:")
@@ -22,8 +22,11 @@ def logModel(modelType, model, train_acc, test_acc, data, params):
     log.append(f"Training Size = {len(data[0])}")
     log.append(f"Testing Size = {len(data[2])}")
     log.append("")
-    log.append(f"Training Accuracy = {train_acc}")
-    log.append(f"Testing Accuracy = {test_acc}")
+    log.append(f"Training Accuracy = {train_stats[0]}")
+    log.append(f"Testing Accuracy = {test_stats[0]}")
+    log.append("")
+    log.append(f"Training Average Error = {train_stats[1]}")
+    log.append(f"Testing Average Error = {test_stats[1]}")
     
     log.append("")
     log.append("Hyper-Parameters: \n")
@@ -98,7 +101,7 @@ def logModel(modelType, model, train_acc, test_acc, data, params):
 
 
 
-def printModel(modelType, model, train_acc, test_acc, data, params):
+def printModel(modelType, model, train_stats, test_stats, data, params):
     # weights = [w for w in model.w]
     
     # log.append("Weights:")
@@ -111,8 +114,11 @@ def printModel(modelType, model, train_acc, test_acc, data, params):
     print(f"Training Size = {len(data[0])}")
     print(f"Testing Size = {len(data[2])}")
     print("")
-    print(f"Training Accuracy = {train_acc}")
-    print(f"Testing Accuracy = {test_acc}")
+    print(f"Training Accuracy = {train_stats[0]}")
+    print(f"Testing Accuracy = {test_stats[0]}")
+    log.append("")
+    log.append(f"Training Average Error = {train_stats[1]}")
+    log.append(f"Testing Average Error = {test_stats[1]}")
     
     print("")
     print("Hyper-Parameters: \n")

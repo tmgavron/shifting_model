@@ -38,16 +38,23 @@ def runDT(train_x, train_y, test_x, test_y, max_depth, max_features, max_leaf_no
     print("getting statistics...\n")
 
     y_trainPred = dt.predict(train_x)
-    train_accuracy = get_infield_statistics(train_y, y_trainPred)
+    trainStats = get_infield_statistics(train_y, y_trainPred)[0]
+    train_accuracy = trainStats[0]
+    train_averageError =  trainStats[1]
 
     y_pred = dt.predict(test_x)
-    test_accuracy = get_infield_statistics(test_y, y_pred)
+    testStats = get_infield_statistics(test_y, y_pred)[0]
+    test_accuracy = testStats[0]
+    test_averageError = testStats[1]
+
+    train_stat = [train_accuracy, train_averageError]
+    test_stat = [test_accuracy, test_averageError]
 
     # CONFIG (add debug/print mode)
-    logs.logModel("DecisionTree", dt, train_accuracy, test_accuracy, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+    logs.logModel("DecisionTree", dt, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
                    ["Max Tree Depth: ", max_depth, "Max Tree Features: ", max_features, "Max Leaf Nodes: ", max_leaf_nodes])
     
-    logs.printModel("DecisionTree", dt, train_accuracy, test_accuracy, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+    logs.printModel("DecisionTree", dt, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
                    ["Max Tree Depth: ", max_depth, "Max Tree Features: ", max_features, "Max Leaf Nodes: ", max_leaf_nodes])
     
     print("done!")
@@ -78,15 +85,22 @@ def runNB(train_x, train_y, test_x, test_y, var_smoothing):
     print("getting statistics...")
 
     y_trainPred = nb.predict(train_x)
-    train_accuracy = get_infield_statistics(train_y, y_trainPred)
+    trainStats = get_infield_statistics(train_y, y_trainPred)
+    train_accuracy = trainStats[0]
+    train_averageError = trainStats[1]
 
     y_pred = nb.predict(test_x)
-    test_accuracy = get_infield_statistics(test_y, y_pred)
+    testStats = get_infield_statistics(test_y, y_pred)
+    test_accuracy = testStats[0]
+    test_averageError = testStats[1]
+
+    train_stat = [train_accuracy, train_averageError]
+    test_stat = [test_accuracy, test_averageError]
     
-    logs.logModel("NaiveBayes", nb, train_accuracy, test_accuracy, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+    logs.logModel("NaiveBayes", nb, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
                    ["Var Smoothing: ", var_smoothing])
     
-    logs.printModel("NaiveBayes", nb, train_accuracy, test_accuracy, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+    logs.printModel("NaiveBayes", nb, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
                    ["Var Smoothing: ", var_smoothing])
     
     print("done!")
@@ -117,16 +131,23 @@ def runLogReg(train_x, train_y, test_x, test_y, lr, e):
     print("getting statistics...")
 
     y_trainPred = logreg.predict(train_x)
-    train_accuracy = get_infield_statistics(train_y, y_trainPred)
+    trainStats = get_infield_statistics(train_y, y_trainPred)
+    train_accuracy = trainStats[0]
+    train_averageError = trainStats[1]
 
     y_pred = logreg.predict(test_x)
-    test_accuracy = get_infield_statistics(test_y, y_pred)
+    testStats = get_infield_statistics(test_y, y_pred)
+    test_accuracy = testStats[0]
+    test_averageError = testStats[1]
+
+    train_stat = [train_accuracy, train_averageError]
+    test_stat = [test_accuracy, test_averageError]
     
     print("logging statistics...")
-    logs.logModel("LogisticRegression", logreg, train_accuracy, test_accuracy, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+    logs.logModel("LogisticRegression", logreg, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
                    ["Learning Rate: ", lr, "Epochs: ", e])
     
-    logs.printModel("LogisticRegression", logreg, train_accuracy, test_accuracy, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+    logs.printModel("LogisticRegression", logreg, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
                    ["Learning Rate: ", lr, "Epochs: ", e])
     
     print("done!")
@@ -162,15 +183,22 @@ def runSVM(train_x, train_y, test_x, test_y, rC, kernel, degree, gamma, coef0):
     print("getting statistics...")
 
     y_trainPred = svm.predict(train_x)
-    train_accuracy = get_infield_statistics(train_y, y_trainPred)
+    trainStats = get_infield_statistics(train_y, y_trainPred)
+    train_accuracy = trainStats[0]
+    train_averageError = trainStats[1]
 
     y_pred = svm.predict(test_x)
-    test_accuracy = get_infield_statistics(test_y, y_pred)
+    testStats = get_infield_statistics(test_y, y_pred)
+    test_accuracy = testStats[0]
+    test_averageError = testStats[1]
+
+    train_stat = [train_accuracy, train_averageError]
+    test_stat = [test_accuracy, test_averageError]
     
-    logs.logModel("SVM", svm, train_accuracy, test_accuracy, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+    logs.logModel("SVM", svm, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
                    ["Regularization Constant: ", rC, "Kernel Type: ", kernel, "Kernel Degree", degree, "Kernel Coefficient (gamma): ", gamma, "Independent Term in Kernel (coef0): ", coef0])
     
-    logs.printModel("SVM", svm, train_accuracy, test_accuracy, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+    logs.printModel("SVM", svm, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
                    ["Regularization Constant: ", rC, "Kernel Type: ", kernel, "Kernel Degree", degree, "Kernel Coefficient (gamma): ", gamma, "Independent Term in Kernel (coef0): ", coef0])
 
     print("done!")
@@ -207,6 +235,8 @@ def get_infield_statistics(pred, y_test):
     false4 = 0
     false5 = 0
 
+    totalError = 0
+
     index = 0
     for i in pred:
         if i == 1:
@@ -234,9 +264,16 @@ def get_infield_statistics(pred, y_test):
                 true5 += 1
             else:
                 false5 += 1
+        
+        error = abs(i - y_test[index])
+        totalError += error
 
         index += 1
 
         totalTrue = true1 + true2 + true3 + true4 + true5
         accuracy = totalTrue / len(y_test)
-    return accuracy
+
+        averageError = totalError / len(y_test)
+
+
+    return accuracy, averageError

@@ -34,6 +34,42 @@ def dataFiltering():
     
     return infieldDataFrame, outfieldDataFrame
 
+def dataProcessing():
+    # 1) Read Data from file:
+    importlib.reload(DataUtil)
+    # small dataset CONFIG
+    # rawData = DataUtil.getRawData("Data/TrackMan_NoStuff_Master.csv")
+    # full dataset CONFIG
+    fieldDataFrame = DataUtil.getData()
+
+    # 3) Expunge bad data
+    cleanDataFrame = DataUtil.expungeData(fieldDataFrame)
+    #print("\nCleaned Data:")
+    #display(cleanDataFrame) # easiest for US to read
+
+    # 4) Convert from categorical to purely numerical data
+    numericDataFrame = DataUtil.convertStringsToValues(cleanDataFrame)
+    #display(numericDataFrame)
+
+    # 5) Normalize the data
+    normalizedDataFrame = DataUtil.normalizeData(numericDataFrame)
+    #print("\nNormalized Data:")
+    #display(normalizedDataFrame) # easiest for AI to read
+
+    return normalizedDataFrame
+
+def dataFiltering(df):
+
+    infieldDataFrame, infieldX = DataUtil.infieldFilter(df)
+    print("\nInfield Data: (No Pitcher / Batter IDs)")
+    #display(infieldDataFrame)
+
+    outfieldDataFrame, outfieldX = DataUtil.outfieldFilter(df)
+    print("\nOutfield Data: (No Pitcher / Batter IDs)")
+    #display(outfieldDataFrame)
+    
+    return (infieldDataFrame, infieldX), (outfieldDataFrame, outfieldX)
+
 # %%
 # Setup Frame for models:
 

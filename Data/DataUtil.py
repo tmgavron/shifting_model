@@ -250,26 +250,42 @@ def convertRawToDataFrame(data_list):
     # df: the fieldDataFrame
 # Output: the filtered DataFrame
 def infieldFilter(df):
+    # Setup headers
+    pitch_hit    = df[['PitcherThrows_Right','PitcherThrows_Left','BatterSide_Right','BatterSide_Left']]
+    tagged_pitch = df.filter(like='TaggedPitchType')
+    tagged_hit   = df[['TaggedHitType_GroundBall']]
+    pitch_info   = df[['ZoneSpeed','PlateLocHeight','PlateLocSide','VertApprAngle','HorzApprAngle','RelSpeed']]
+    hit_info     = df[['Direction','Distance']]
+
+    filtered_df = pd.concat([pitch_hit,tagged_pitch,tagged_hit,pitch_info], axis=1)
+    filtered_x  = filtered_df.columns.tolist()
+    filtered_df = pd.concat([filtered_df,hit_info], axis=1)
+
+    # Filter rows that don't meet the criteria
+    filtered_df = filtered_df[(filtered_df['TaggedHitType_GroundBall'] == 1) | (filtered_df['Distance'] <= 0.35)] # 0.35 is approx grassline
+
+    # ----- PREVIOUS FILTERING -----
     # df = df[["PitcherId","BatterId","TaggedPitchType","PitchCall","TaggedHitType","Direction","HitLaunchConfidence"]]
     # ^^^ That one was from before decision to do All Hitters vs PitchType
     # df = df[["PitcherThrows", "BatterSide", "TaggedPitchType", "PitchCall", "TaggedHitType", "ZoneSpeed", "PlateLocHeight", "PlateLocSide", "Direction"]]
-    df = df[df["PitcherThrows"].isin(["Left", "Right", "Both"])] # 1, 2, 3 (can remove Both)
-    df["PitcherThrows"] = df["PitcherThrows"].map({"Left":1, "Right":2, "Both":3})
-    df = df[df["BatterSide"].isin(["Left","Right"])] # 1, 2
-    df["BatterSide"] = df["BatterSide"].map({"Left":1, "Right":2})
-    df = df[df["TaggedPitchType"].isin(["Fastball", "Sinker", "Cutter", "Curveball", "Slider", "Changeup", "Splitter", "Knuckleball"])] # 1,2,3,4,5,6,7,8
-    df["TaggedPitchType"] = df["TaggedPitchType"].map({"Fastball":1, "Sinker":2, "Cutter":3, "Curveball":4, "Slider":5, "Changeup":6, "Splitter":7, "Knuckleball":8})
-    df = df[df["PitchCall"].str.contains("InPlay")]
-    df = df[df["TaggedHitType"].str.contains("GroundBall")]
-    df = df[df["Direction"].between(-45, 45)]
-    bins = [-45, -27, -9, 9, 27, 45]
-    labels = [1,2,3,4,5]
-    df["FieldSlice"] = pd.cut(df["Direction"], bins=bins, labels=labels)
+    #df = df[df["PitcherThrows"].isin(["Left", "Right", "Both"])] # 1, 2, 3 (can remove Both)
+    #df["PitcherThrows"] = df["PitcherThrows"].map({"Left":1, "Right":2, "Both":3})
+    #df = df[df["BatterSide"].isin(["Left","Right"])] # 1, 2
+    #df["BatterSide"] = df["BatterSide"].map({"Left":1, "Right":2})
+    #df = df[df["TaggedPitchType"].isin(["Fastball", "Sinker", "Cutter", "Curveball", "Slider", "Changeup", "Splitter", "Knuckleball"])] # 1,2,3,4,5,6,7,8
+    #df["TaggedPitchType"] = df["TaggedPitchType"].map({"Fastball":1, "Sinker":2, "Cutter":3, "Curveball":4, "Slider":5, "Changeup":6, "Splitter":7, "Knuckleball":8})
+    #df = df[df["PitchCall"].str.contains("InPlay")]
+    #df = df[df["TaggedHitType"].str.contains("GroundBall")]
+    #df = df[df["Direction"].between(-45, 45)]
+    #bins = [-45, -27, -9, 9, 27, 45]
+    #labels = [1,2,3,4,5]
+    #df["FieldSlice"] = pd.cut(df["Direction"], bins=bins, labels=labels)
     # df = df[df["HitLaunchConfidence"].isin(["Medium","High"])]
     # print("--")
     # print(df)
     # print("--")
-    return df
+
+    return filtered_df, filtered_x
 
 # This function filters the given Pandas DataFrame specifically for outfield data fields. These fields are used just for initial testing and
 #   training of the Models
@@ -277,16 +293,31 @@ def infieldFilter(df):
     # df: the fieldDataFrame
 # Output: the filtered DataFrame
 def outfieldFilter(df):
+    # Setup headers
+    pitch_hit    = df[['PitcherThrows_Right','PitcherThrows_Left','BatterSide_Right','BatterSide_Left']]
+    tagged_pitch = df.filter(like='TaggedPitchType')
+    tagged_hit   = df[['TaggedHitType_FlyBall','TaggedHitType_LineDrive']]
+    pitch_info   = df[['ZoneSpeed','PlateLocHeight','PlateLocSide','VertApprAngle','HorzApprAngle','RelSpeed']]
+    hit_info     = df[['Direction','Distance']]
+
+    filtered_df = pd.concat([pitch_hit,tagged_pitch,tagged_hit,pitch_info], axis=1)
+    filtered_x  = filtered_df.columns.tolist()
+    filtered_df = pd.concat([filtered_df,hit_info], axis=1)
+
+    # Filter rows that don't meet the criteria
+    filtered_df = filtered_df[((filtered_df['TaggedHitType_FlyBall'] == 1) | (filtered_df['TaggedHitType_LineDrive'] == 1)) & (filtered_df['Distance'] > 0.35)] # 0.35 is approx grassline
+
+    # ----- PREVIOUS FILTERING -----
     # df = df[["PitcherId","BatterId","TaggedPitchType","PitchCall","TaggedHitType","Bearing","Distance","HitLandingConfidence"]]
-    df = df[df["PitchCall"].str.contains("InPlay")]
-    df = df[df["TaggedHitType"].isin(["FlyBall","LineDrive"])]
-    df = df[df["Distance"] >= 150]
-    df = df[df["Bearing"].between(-45, 45)]
-    bins = [-45, -27, -9, 9, 27, 45]
-    labels = [1,2,3,4,5]
-    df['FieldSlice'] = pd.cut(df['Bearing'], bins=bins, labels=labels)
+    #df = df[df["PitchCall"].str.contains("InPlay")]
+    #df = df[df["TaggedHitType"].isin(["FlyBall","LineDrive"])]
+    #df = df[df["Distance"] >= 150]
+    #df = df[df["Bearing"].between(-45, 45)]
+    #bins = [-45, -27, -9, 9, 27, 45]
+    #labels = [1,2,3,4,5]
+    #df['FieldSlice'] = pd.cut(df['Bearing'], bins=bins, labels=labels)
     # df = df[df["HitLandingConfidence"].isin(["Medium","High"])]
-    return df
+    return filtered_df, filtered_x
 
 
 # This function finds the index of a given column in a dataset
@@ -328,3 +359,32 @@ def clamp01(df):
     for feature_name in df.columns:
         result[feature_name] = df[feature_name].clip(0, 1)
     return result
+
+# This function sets each column that should NOT behave as a numeric value to split columns with boolean values (0 or 1)
+# This currently IGNORES pitcherID and batterID, even though they would be categorical. This is so the model can be trained on all pitchers and batters.
+# Input:  the DataFrame
+# Output: the transformed DataFrame
+def convertStringsToValues(df):
+    categorical_features = ["PitcherThrows","BatterSide","TaggedPitchType","AutoPitchType","PitchCall","TaggedHitType","PlayResult","HitLaunchConfidence","HitLandingConfidence","PitcherId","BatterId"]
+    transformed_df = pd.get_dummies(df, columns=categorical_features, dtype=float)
+    numCategoricalFeatures = len(categorical_features)
+    return transformed_df
+
+# This function expunges all empty strings, bad datapoints, and NaN datapoints from the given DataFrame
+# Input:  the DataFrame
+# Output: the cleaned DataFrame
+def expungeData(df):
+    df.loc[(df['Direction']      > 55.00) | (df['Direction']      < -55.00), 'Direction']      = np.nan # Remove bad angles (direction)
+    df.loc[(df['Bearing']        > 55.00) | (df['Bearing']        < -55.00), 'Bearing']        = np.nan # Remove bad angles (bearing)
+    df.loc[(df['PlateLocSide']   >  1.75) | (df['PlateLocSide']   <  -1.75), 'PlateLocSide']   = np.nan # Remove bad pitches (horizontal)
+    df.loc[(df['PlateLocHeight'] >  4.00) | (df['PlateLocHeight'] <   0.00), 'PlateLocHeight'] = np.nan # Remove bad pitches (vertical)
+    df.loc[~df['PitchCall'].str.contains("InPlay"), 'PitchCall'] = np.nan                               # Remove bad hits
+
+    df = df.replace('', np.nan)                                                                         # Remove empty Strings
+    df = df.dropna(axis=0, how='any')                                                                      # Drop all NaN data points
+    return df
+
+# This function uses a custom normalization method (saturation) to normalize the data in the given DataFrame.
+def normalizeData(df):
+    normal_df = (df-df.min())/(df.max()-df.min())
+    return normal_df

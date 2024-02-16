@@ -205,6 +205,86 @@ def runSVM(train_x, train_y, test_x, test_y, rC, kernel, degree, gamma, coef0):
 
     return svm, train_accuracy, test_accuracy
 
+# Run Random Forest Regressor
+# Inputs:
+    # train_x
+    # train_y
+    # test_x
+    # test_y
+def runRFR(train_x, train_y, test_x, test_y):
+    rfr = RandomForestRegressor()
+    param_grid = {
+        'n_estimators': [100, 200, 400, 800, 1200],
+        'max_depth': [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, None],
+        'criterion': ['squared_error','absolute_error','friedman_mse','poisson'],
+        'min_samples_split': [2, 4, 8, 12],
+        'min_samples_leaf': [1, 2, 4],
+        'max_features': ['sqrt', 'log2', None],
+        'bootstrap': [True, False]
+    }
+    best_rfr = trainHyperParameters(rfr, param_grid, train_x, train_y)
+    best_rfr.fit(train_x, train_y)
+
+    #importances = rfr.feature_importances_
+    predictions = best_rfr.predict(test_x)
+    directionScore, distanceScore = measurePerformance(predictions, test_y)
+
+    return directionScore, distanceScore
+
+def trainHyperParameters(model, grid, train_x, train_y):
+    grid_search = GridSearchCV(estimator=model, param_grid=grid, cv=5, n_jobs=-1, verbose=2)
+    grid_search.fit(train_x, train_y)
+    return grid_search.best_estimator_
+
+def measurePerformance(predictions, test_y):
+    # Values From DataUtil, if you change those: change these, and vise-versa
+    ANGLE_RANGE      = 55
+    DISTANCE_RANGE   = 450
+
+
+    direction_bins   = [-float('inf'), -45, -27, -9, 9, 27, 45, float('inf')]
+
+    predictDirection = (predictions[0][0]*ANGLE_RANGE*2) - ANGLE_RANGE
+    actualDirection  = (test_y.iloc[0].values[0]*ANGLE_RANGE*2) - ANGLE_RANGE
+    errorDirection   = abs(predictDirection - actualDirection)
+
+    predictSlice     = convertAngleToSlice(predictDirection)
+    actualSlice      = convertAngleToSlice(actualDirection)
+
+    predictDistance  = predictions[0][1] * 450
+    actualDistance   = test_y.iloc[0].values[1] * 450
+    errorDistance    = abs(predictDistance - actualDistance)
+
+    directionScore   = 1 - math.sqrt(errorDirection / (2*ANGLE_RANGE))
+    distanceScore    = 1 - math.sqrt(errorDistance / DISTANCE_RANGE)
+
+    #print("Direction:\nPredict: ", predictDirection," (", predictSlice,")\tActual: ", actualDirection, " (", actualSlice, "),\tError: ", errorDirection,"\tScore: ", directionScore)
+    #print("Distance:\nPredict: ", predictDistance, "\tActual: ", actualDistance, "\tError: ", errorDistance, "\tScore: ",distanceScore,"\n")
+
+    return directionScore, distanceScore
+
+# Function for calculating the weighted score of a model
+# Inputs:
+    # y_true: actual values
+    # y_pred: predicted values
+def calculateScore(y_true, y_pred):
+    directionWeight = 3
+    distanceWeight = 1
+    measurePerformance(y_pred, y_true)
+    weightedScore = ((directionScore * directionWeight) + (distanceScore * distanceWeight)) / (directionWeight + distanceWeight)
+    return weightedScore
+
+def convertAngleToSlice(angle):
+    if angle < -27:
+        return 1
+    elif angle < -9:
+        return 2
+    elif angle < 9:
+        return 3
+    elif angle < 27:
+        return 4
+    else:
+        return 5
 
 def colsum(arr, n, m):
     coll = [0,0,0,0,0]
@@ -277,3 +357,4 @@ def get_infield_statistics(pred, y_test):
 
 
     return accuracy, averageError
+

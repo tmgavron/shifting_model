@@ -28,6 +28,8 @@ def getData():
         df = getRawDataFrame("Data/TrackMan_NoStuff_Master.csv")
     elif ("True" in config['DATA']['FileZillaCSV']):
         df = pd.read_csv('combined_dataset.csv')
+    else:
+        print("No Data Source Selected")
     return df
 
 

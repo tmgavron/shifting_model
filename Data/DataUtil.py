@@ -12,15 +12,20 @@ from io import BytesIO
 config = configparser.ConfigParser()
 config.read('Data//config.ini')
 
+# All the values we believe will be most important to the model
+listOfCols = ["PitcherId", "BatterId", "PitcherThrows", "BatterSide", "TaggedPitchType", "AutoPitchType", "PitchCall", "TaggedHitType", "PlayResult", 
+              "RelSpeed", "VertRelAngle", "HorzRelAngle", "SpinRate", "SpinAxis", "InducedVertBreak", "PlateLocHeight", "PlateLocSide",
+              "ZoneSpeed", "VertApprAngle", "HorzApprAngle", "ExitSpeed", "Angle", "HitSpinRate", "PositionAt110X", "PositionAt110Y",
+              "PositionAt110Z", "Distance", "Direction", "Bearing", "HitLaunchConfidence", "HitLandingConfidence"]
+
 def getData():  
     df = pd.DataFrame()
-    if("True" in config['DATA']['RawData']):
+    if("True" in config['DATA']['DB_API']):
         pass
     elif ("True" in config['DATA']['FTP_API']):
         df = getFTPData()
     elif ("True" in config['DATA']['RawData']):
-        temp = getRawData("Data/TrackMan_NoStuff_Master.csv")
-        df = convertRawToDataFrame(temp)
+        df = getRawDataFrame("Data/TrackMan_NoStuff_Master.csv")
     elif ("True" in config['DATA']['FileZillaCSV']):
         df = pd.read_csv('combined_dataset.csv')
     return df
@@ -115,9 +120,9 @@ def getFTPData():
         ftp.quit()
 
         print("combinedPitchDF")
-        print(combinedPitchDF)
+        #display(combinedPitchDF)
         print("combinedPositionDF")
-        print(combinedPositionDF)
+        #display(combinedPositionDF)
 
         if ("True" in config['DATA']['Pickle']):
             combinedPitchDF.to_pickle("./Data/PitchData/PitchData_"+dates+".pkl")
@@ -169,7 +174,7 @@ def getFTPData():
 
 # Input: filename (name of file or path to file)
 # Ouput: list of datapoints with desired columns
-def getRawData(filename):
+def getRawDataFrame(filename):
     raw_data = list()
     with open(filename, 'r', encoding='utf-8') as file:
         csv_reader = csv.reader(file)
@@ -179,10 +184,6 @@ def getRawData(filename):
 
         # Create List of column indexes from column name
         indexDic = {}
-        listOfCols = ["PitcherId", "BatterId", "PitcherThrows", "BatterSide", "TaggedPitchType", "AutoPitchType", "PitchCall", "TaggedHitType", "PlayResult", 
-                         "RelSpeed", "VertRelAngle", "HorzRelAngle", "SpinRate", "SpinAxis", "InducedVertBreak", "PlateLocHeight", "PlateLocSide",
-                         "ZoneSpeed", "VertApprAngle", "HorzApprAngle", "ExitSpeed", "Angle", "HitSpinRate", "PositionAt110X", "PositionAt110Y",
-                         "PositionAt110Z", "Distance", "Direction", "Bearing", "HitLaunchConfidence", "HitLandingConfidence"]
         for colName in listOfCols:
             indexDic[colName] = find_column_index(filename, colName)
 
@@ -191,7 +192,7 @@ def getRawData(filename):
             # ID's:
             #raw_row.append(str(row[indexDic["PitchNo"]])) # PitchNo
             #raw_row.append(str(row[indexDic["PitchUID"]])) # PitchUID
-            raw_row.append(str(row[indexDic["PitcherId"]])) # PitchId
+            raw_row.append(str(row[indexDic["PitcherId"]])) # PitcherId
             raw_row.append(str(row[indexDic["BatterId"]])) # BatterId
             # Setup Info:
             raw_row.append(str(row[indexDic["PitcherThrows"]])) # PitcherThrows
@@ -230,19 +231,14 @@ def getRawData(filename):
 
             # Add Datapoint
             raw_data.append(raw_row)
-    return raw_data
 
-# This function converts the Raw Data(from API) into a Pandas DataFrame for easy filtering and manipulation. Also easy to use inside of ML models. 
-# Inputs:
-    # data_list: a list of data ideally received from getRawData()
-# Output: the converted DataFrame
-def convertRawToDataFrame(data_list):
-    listOfCols = ["PitcherId", "BatterId", "PitcherThrows", "BatterSide", "TaggedPitchType", "AutoPitchType", "PitchCall", "TaggedHitType", "PlayResult", 
-                         "RelSpeed", "VertRelAngle", "HorzRelAngle", "SpinRate", "SpinAxis", "InducedVertBreak", "PlateLocHeight", "PlateLocSide",
-                         "ZoneSpeed", "VertApprAngle", "HorzApprAngle", "ExitSpeed", "Angle", "HitSpinRate", "PositionAt110X", "PositionAt110Y",
-                         "PositionAt110Z", "Distance", "Direction", "Bearing", "HitLaunchConfidence", "HitLandingConfidence"]
-    fieldDataFrame = pd.DataFrame(data_list, columns=listOfCols)
-    return fieldDataFrame
+    # Create dataframe
+    raw_dataframe = pd.DataFrame(raw_data, columns=listOfCols)
+    return raw_dataframe
+
+def trimData(df):
+    trimmed_df = df[listOfCols]
+    return trimmed_df
 
 # This function sets each column that should NOT behave as a numeric value to split columns with boolean values (0 or 1)
 # This currently IGNORES pitcherID and batterID, even though they would be categorical. This is so the model can be trained on all pitchers and batters.
@@ -251,21 +247,20 @@ def convertRawToDataFrame(data_list):
 def convertStringsToValues(df):
     categorical_features = ["PitcherThrows","BatterSide","TaggedPitchType","AutoPitchType","PitchCall","TaggedHitType","PlayResult","HitLaunchConfidence","HitLandingConfidence","PitcherId","BatterId"]
     transformed_df = pd.get_dummies(df, columns=categorical_features, dtype=float)
-    numCategoricalFeatures = len(categorical_features)
     return transformed_df
 
 # This function expunges all empty strings, bad datapoints, and NaN datapoints from the given DataFrame
 # Input:  the DataFrame
 # Output: the cleaned DataFrame
 def expungeData(df):
-    df.loc[(df['Direction']      > 55.00) | (df['Direction']      < -55.00), 'Direction']      = numpy.nan # Remove bad angles (direction)
-    df.loc[(df['Bearing']        > 55.00) | (df['Bearing']        < -55.00), 'Bearing']        = numpy.nan # Remove bad angles (bearing)
-    df.loc[(df['PlateLocSide']   >  1.75) | (df['PlateLocSide']   <  -1.75), 'PlateLocSide']   = numpy.nan # Remove bad pitches (horizontal)
-    df.loc[(df['PlateLocHeight'] >  4.00) | (df['PlateLocHeight'] <   0.00), 'PlateLocHeight'] = numpy.nan # Remove bad pitches (vertical)
-    df.loc[~df['PitchCall'].str.contains("InPlay"), 'PitchCall'] = numpy.nan                               # Remove bad hits
+    df.loc[(df['Direction']      > 55.00) | (df['Direction']      < -55.00), 'Direction']      = np.nan # Remove bad angles (direction)
+    df.loc[(df['Bearing']        > 55.00) | (df['Bearing']        < -55.00), 'Bearing']        = np.nan # Remove bad angles (bearing)
+    df.loc[(df['PlateLocSide']   >  1.75) | (df['PlateLocSide']   <  -1.75), 'PlateLocSide']   = np.nan # Remove bad pitches (horizontal)
+    df.loc[(df['PlateLocHeight'] >  4.00) | (df['PlateLocHeight'] <   0.00), 'PlateLocHeight'] = np.nan # Remove bad pitches (vertical)
+    df.loc[~df['PitchCall'].str.contains("InPlay"), 'PitchCall'] = np.nan                               # Remove bad hits
 
-    df = df.replace('', numpy.nan)                                                                         # Remove empty Strings
-    df = df.dropna(axis=0, how='any')                                                                      # Drop all NaN data points
+    df = df.replace('', np.nan)                                                                         # Remove empty Strings
+    df = df.dropna(axis=0, how='any')                                                                   # Drop all NaN data points
     return df
 
 # This function uses a custom normalization method (saturation) to normalize the data in the given DataFrame.
@@ -343,8 +338,6 @@ def infieldFilter(df):
 
     return filtered_df, filtered_x
 
-    return filtered_df, filtered_x
-
 # This function filters the given Pandas DataFrame specifically for outfield data fields. These fields are used just for initial testing and
 #   training of the Models
 # Inputs:
@@ -397,7 +390,6 @@ def outfieldFilter(df):
     #labels = [1,2,3,4,5]
     #df['FieldSlice'] = pd.cut(df['Bearing'], bins=bins, labels=labels)
     # df = df[df["HitLandingConfidence"].isin(["Medium","High"])]
-    return filtered_df, filtered_x
     return filtered_df, filtered_x
 
 

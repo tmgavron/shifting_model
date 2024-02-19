@@ -1,18 +1,20 @@
 from PIL import Image, ImageDraw, ImageFont
 
 # Color Constants as RGBA tuples:
-navy        = ( 12,  35,  64, 255) # Auburn Navy
-orange      = (232, 119,  34, 255) # Auburn Orange
-white       = (255, 255, 255, 255) # White
-black       = (  0,   0,   0, 255) # Black
-transparent = (255, 255, 255,   0) # Transparent
+navy_dark    = ( 12,  35,  64, 255) # Auburn Navy
+navy_light   = (206, 211, 217, 255) # Auburn Navy Light Gradient
+orange_dark  = (232, 97,    0, 255) # Auburn Orange
+orange_light = (250, 223, 204, 255) # Auburn Orange Light Gradient
+white        = (255, 255, 255, 255) # White
+black        = (  0,   0,   0, 255) # Black
+transparent  = (255, 255, 255,   0) # Transparent
 
 # Creates an image of a baseball field with slices colored based on the odds of being hit into. Also displays the percent chance on each slice.
 def visualizeData(infieldPercentages, outfieldPercentages):
     slices = infieldPercentages.__len__()
-    fieldImage = Image.open('Visualization/Field.png')
+    fieldImage = Image.open('Visualization/Field2.png')
     
-    sliceImages = doFieldSlices(slices, infieldPercentages,  orange,  'infield') + doFieldSlices(slices, outfieldPercentages, navy, 'outfield')
+    sliceImages = doFieldSlices(slices, infieldPercentages,  orange_dark, orange_light,  'infield') + doFieldSlices(slices, outfieldPercentages, navy_dark, navy_light, 'outfield')
     flatImage = layerImages(fieldImage, sliceImages)
     finalImage = addPercents(flatImage, infieldPercentages, outfieldPercentages)
 
@@ -22,25 +24,25 @@ def addPercents(image, infield, outfield):
     useFont = ImageFont.truetype("Visualization/Fonts/SweetSansProRegular.otf", 30)
     draw = ImageDraw.Draw(image)
     # Infield
-    draw.text(( 600,920),cleanNumber(infield[0]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
-    draw.text(( 690,830),cleanNumber(infield[1]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
-    draw.text(( 805,780),cleanNumber(infield[2]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
-    draw.text(( 925,830),cleanNumber(infield[3]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
-    draw.text((1010,920),cleanNumber(infield[4]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
+    draw.text(( 610,920),cleanNumber(infield[0]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
+    draw.text(( 695,830),cleanNumber(infield[1]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
+    draw.text(( 814,800),cleanNumber(infield[2]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
+    draw.text(( 940,830),cleanNumber(infield[3]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
+    draw.text((1020,920),cleanNumber(infield[4]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
     # Outfield
-    draw.text(( 290,500),cleanNumber(outfield[0]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
-    draw.text(( 530,375),cleanNumber(outfield[1]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
-    draw.text(( 805,275),cleanNumber(outfield[2]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
-    draw.text((1070,375),cleanNumber(outfield[3]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
-    draw.text((1310,500),cleanNumber(outfield[4]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
+    draw.text(( 240,425),cleanNumber(outfield[0]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
+    draw.text(( 522,300),cleanNumber(outfield[1]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
+    draw.text(( 814,250),cleanNumber(outfield[2]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
+    draw.text((1105,300),cleanNumber(outfield[3]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
+    draw.text((1387,425),cleanNumber(outfield[4]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
     return image
 
 # Creates a list of images for each slice of the field
-def doFieldSlices(slices, odds, color, string):
+def doFieldSlices(slices, odds, color1, color2, string):
     images = []
     for i in range(1, slices+1):
         image = Image.open('Visualization/Slices/' + str(slices) + ' Slices/' + string + "_" + str(i) + '.png')
-        image = colorImage(image, color, odds, i)
+        image = colorImage(image, color1, color2, odds, i)
         images.append(image)
     return images
 
@@ -53,10 +55,10 @@ def layerImages(foreground, images):
     return background
 
 # Changes the color of a slice based on the odds of it being hit
-def colorImage(image, color, odds, index):
+def colorImage(image, color1, color2, odds, index):
     maxOdds  = max(odds)
     normOdds = [x / maxOdds for x in odds]
-    sliceColor = blendColors(white, color, normOdds[index-1])
+    sliceColor = blendColors(color2, color1, normOdds[index-1])
     newImage = recolor(image, white, sliceColor)
     return newImage
 

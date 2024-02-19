@@ -105,12 +105,14 @@ def runDT(train_x, train_y, test_x, test_y, max_depth, max_features, max_leaf_no
     print("getting statistics...\n")
 
     y_trainPred = dt.predict(train_x)
-    trainStats = get_infield_statistics(train_y, y_trainPred)[0]
+    print(train_y)
+    print(y_trainPred)
+    trainStats = get_infield_statistics(train_y, y_trainPred)
     train_accuracy = trainStats[0]
     train_averageError =  trainStats[1]
 
     y_pred = dt.predict(test_x)
-    testStats = get_infield_statistics(test_y, y_pred)[0]
+    testStats = get_infield_statistics(test_y, y_pred)
     test_accuracy = testStats[0]
     test_averageError = testStats[1]
 
@@ -462,7 +464,6 @@ def get_infield_statistics(pred, y_test):
                 true5 += 1
             else:
                 false5 += 1
-        
         error = abs(i - y_test[index])
         totalError += error
 

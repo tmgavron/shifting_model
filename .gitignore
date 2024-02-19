@@ -1,3 +1,7 @@
 environment
 Data/combined_dataset.csv
 csv_combine.py
+Data\__pycache__
+Logs\__pycache__
+Models\__pycache__
+Visualization\__pycache__

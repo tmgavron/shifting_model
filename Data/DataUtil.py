@@ -27,7 +27,7 @@ def getData():
     elif ("True" in config['DATA']['RawData']):
         df = getRawDataFrame("Data/TrackMan_NoStuff_Master.csv")
     elif ("True" in config['DATA']['FileZillaCSV']):
-        df = pd.read_csv('combined_dataset.csv')
+        df = getRawDataFrame('Data/combined_dataset.csv')
     else:
         print("No Data Source Selected")
     return df
@@ -435,31 +435,6 @@ def clamp01(df):
         result[feature_name] = df[feature_name].clip(0, 1)
     return result
 
-# This function sets each column that should NOT behave as a numeric value to split columns with boolean values (0 or 1)
-# This currently IGNORES pitcherID and batterID, even though they would be categorical. This is so the model can be trained on all pitchers and batters.
-# Input:  the DataFrame
-# Output: the transformed DataFrame
-def convertStringsToValues(df):
-    categorical_features = ["PitcherThrows","BatterSide","TaggedPitchType","AutoPitchType","PitchCall","TaggedHitType","PlayResult","HitLaunchConfidence","HitLandingConfidence","PitcherId","BatterId"]
-    transformed_df = pd.get_dummies(df, columns=categorical_features, dtype=float)
-    numCategoricalFeatures = len(categorical_features)
-    return transformed_df
 
-# This function expunges all empty strings, bad datapoints, and NaN datapoints from the given DataFrame
-# Input:  the DataFrame
-# Output: the cleaned DataFrame
-def expungeData(df):
-    df.loc[(df['Direction']      > 55.00) | (df['Direction']      < -55.00), 'Direction']      = np.nan # Remove bad angles (direction)
-    df.loc[(df['Bearing']        > 55.00) | (df['Bearing']        < -55.00), 'Bearing']        = np.nan # Remove bad angles (bearing)
-    df.loc[(df['PlateLocSide']   >  1.75) | (df['PlateLocSide']   <  -1.75), 'PlateLocSide']   = np.nan # Remove bad pitches (horizontal)
-    df.loc[(df['PlateLocHeight'] >  4.00) | (df['PlateLocHeight'] <   0.00), 'PlateLocHeight'] = np.nan # Remove bad pitches (vertical)
-    df.loc[~df['PitchCall'].str.contains("InPlay"), 'PitchCall'] = np.nan                               # Remove bad hits
-
-    df = df.replace('', np.nan)                                                                         # Remove empty Strings
-    df = df.dropna(axis=0, how='any')                                                                      # Drop all NaN data points
-    return df
-
-# This function uses a custom normalization method (saturation) to normalize the data in the given DataFrame.
-def normalizeData(df):
     normal_df = (df-df.min())/(df.max()-df.min())
     return normal_df

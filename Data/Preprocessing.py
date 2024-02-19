@@ -18,12 +18,9 @@ import pandas
 
 # %%
 
-def dataProcessing():
+def dataProcessing(useNewProcessing):
     # 1) Read Data from file:
     importlib.reload(DataUtil)
-    # small dataset CONFIG
-    # rawData = DataUtil.getRawData("Data/TrackMan_NoStuff_Master.csv")
-    # full dataset CONFIG
     fieldDataFrame = DataUtil.getData()
     #display(fieldDataFrame)
 
@@ -45,17 +42,31 @@ def dataProcessing():
 
     return normalizedDataFrame
 
-def dataFiltering(df):
+def dataFiltering(df, useNewProcessing):
+    if useNewProcessing:
+        infieldDataFrame, infieldX = DataUtil.infieldFilter(df)
+        print("\nInfield Data: (No Pitcher / Batter IDs)")
+        display(infieldDataFrame)
 
-    infieldDataFrame, infieldX = DataUtil.infieldFilter(df)
-    print("\nInfield Data: (No Pitcher / Batter IDs)")
-    display(infieldDataFrame)
+        outfieldDataFrame, outfieldX = DataUtil.outfieldFilter(df)
+        print("\nOutfield Data: (No Pitcher / Batter IDs)")
+        display(outfieldDataFrame)
+        
+        return (infieldDataFrame, infieldX), (outfieldDataFrame, outfieldX)
+    else:
+        # 1) Read Data from file:
+        importlib.reload(DataUtil)
+        dataFrame = DataUtil.getData()
 
-    outfieldDataFrame, outfieldX = DataUtil.outfieldFilter(df)
-    print("\nOutfield Data: (No Pitcher / Batter IDs)")
-    display(outfieldDataFrame)
-    
-    return (infieldDataFrame, infieldX), (outfieldDataFrame, outfieldX)
+        # a) Filter for infield/outfield sets
+        infieldDataFrame = DataUtil.infieldFilter(dataFrame)
+        #print(infieldDataFrame.head())
+        #print(infieldDataFrame.shape)
+        outfieldDataFrame = DataUtil.outfieldFilter(dataFrame)
+        #print(outfieldDataFrame.head())
+        #print(outfieldDataFrame.shape)
+        
+        return infieldDataFrame, outfieldDataFrame
 
 # %%
 # Setup Frame for models:

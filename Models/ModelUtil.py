@@ -14,72 +14,73 @@ from sklearn.model_selection import GridSearchCV
 import configparser
 from Logs import logging as logs
 
-def trainHyperParameters(model, grid, train_x, train_y):
-    grid_search = GridSearchCV(estimator=model, param_grid=grid, cv=5, n_jobs=-1, verbose=2)
-    grid_search.fit(train_x, train_y)
-    return grid_search.best_estimator_
-
-# Run Random Forest Regressor
-# Inputs:
-    # train_x
-    # train_y
-    # test_x
-    # test_y
-def runRFR(train_x, train_y, test_x, test_y):
-    rfr = RandomForestRegressor()
-    param_grid = {
-        'n_estimators': [100, 200, 400, 800, 1200],
-        'max_depth': [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, None],
-        'criterion': ['squared_error','absolute_error','friedman_mse','poisson'],
-        'min_samples_split': [2, 4, 8, 12],
-        'min_samples_leaf': [1, 2, 4],
-        'max_features': ['sqrt', 'log2', None],
-        'bootstrap': [True, False]
-    }
-    best_rfr = trainHyperParameters(rfr, param_grid, train_x, train_y)
-    best_rfr.fit(train_x, train_y)
-
-    #importances = rfr.feature_importances_
-    predictions = best_rfr.predict(test_x)
-    directionScore, distanceScore = measurePerformance(predictions, test_y)
-
-    return directionScore, distanceScore
-
-
-def trainHyperParameters(model, grid, train_x, train_y):
-    grid_search = GridSearchCV(estimator=model, param_grid=grid, cv=5, n_jobs=-1, verbose=2)
-    grid_search.fit(train_x, train_y)
-    return grid_search.best_estimator_
-
-# Run Random Forest Regressor
-# Inputs:
-    # train_x
-    # train_y
-    # test_x
-    # test_y
-def runRFR(train_x, train_y, test_x, test_y):
-    rfr = RandomForestRegressor()
-    param_grid = {
-        'n_estimators': [100, 200, 400, 800, 1200],
-        'max_depth': [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, None],
-        'criterion': ['squared_error','absolute_error','friedman_mse','poisson'],
-        'min_samples_split': [2, 4, 8, 12],
-        'min_samples_leaf': [1, 2, 4],
-        'max_features': ['sqrt', 'log2', None],
-        'bootstrap': [True, False]
-    }
-    best_rfr = trainHyperParameters(rfr, param_grid, train_x, train_y)
-    best_rfr.fit(train_x, train_y)
-
-    #importances = rfr.feature_importances_
-    predictions = best_rfr.predict(test_x)
-    directionScore, distanceScore = measurePerformance(predictions, test_y)
-
-    return directionScore, distanceScore
-
-
 config = configparser.ConfigParser()
 config.read('Data//config.ini')
+
+def trainHyperParameters(model, grid, train_x, train_y):
+    grid_search = GridSearchCV(estimator=model, param_grid=grid, cv=5, n_jobs=-1, verbose=2)
+    grid_search.fit(train_x, train_y)
+    return grid_search.best_estimator_
+
+# Run Random Forest Regressor
+# Inputs:
+    # train_x
+    # train_y
+    # test_x
+    # test_y
+def runRFR(train_x, train_y, test_x, test_y):
+    rfr = RandomForestRegressor()
+    param_grid = {
+        'n_estimators': [100, 200, 400, 800, 1200],
+        'max_depth': [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, None],
+        'criterion': ['squared_error','absolute_error','friedman_mse','poisson'],
+        'min_samples_split': [2, 4, 8, 12],
+        'min_samples_leaf': [1, 2, 4],
+        'max_features': ['sqrt', 'log2', None],
+        'bootstrap': [True, False]
+    }
+    best_rfr = trainHyperParameters(rfr, param_grid, train_x, train_y)
+    best_rfr.fit(train_x, train_y)
+
+    #importances = rfr.feature_importances_
+    predictions = best_rfr.predict(test_x)
+    directionScore, distanceScore = measurePerformance(predictions, test_y)
+
+    return directionScore, distanceScore
+
+
+def trainHyperParameters(model, grid, train_x, train_y):
+    grid_search = GridSearchCV(estimator=model, param_grid=grid, cv=5, n_jobs=-1, verbose=2)
+    grid_search.fit(train_x, train_y)
+    return grid_search.best_estimator_
+
+# Run Random Forest Regressor
+# Inputs:
+    # train_x
+    # train_y
+    # test_x
+    # test_y
+def runRFR(train_x, train_y, test_x, test_y):
+    rfr = RandomForestRegressor()
+    param_grid = {
+        'n_estimators': [100, 200, 400, 800, 1200],
+        'max_depth': [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, None],
+        'criterion': ['squared_error','absolute_error','friedman_mse','poisson'],
+        'min_samples_split': [2, 4, 8, 12],
+        'min_samples_leaf': [1, 2, 4],
+        'max_features': ['sqrt', 'log2', None],
+        'bootstrap': [True, False]
+    }
+    best_rfr = trainHyperParameters(rfr, param_grid, train_x, train_y)
+    best_rfr.fit(train_x, train_y)
+
+    #importances = rfr.feature_importances_
+    predictions = best_rfr.predict(test_x)
+    directionScore, distanceScore = measurePerformance(predictions, test_y)
+
+    return directionScore, distanceScore
+
+
 # Run Decision Tree Training and Testing
 # Inputs:
     # train_x
@@ -92,7 +93,7 @@ config.read('Data//config.ini')
 # Ouput:
     # Decision Tree Model, Training Accuracy, Testing Accuracy
 def runDT(train_x, train_y, test_x, test_y, max_depth, max_features, max_leaf_nodes):
-    if (config['MODELS']['DTC'] == False):
+    if (config['MODELS']['DTC'] == 'False'):
         return None, None, None
     dt = DecisionTreeClassifier(max_depth=max_depth, max_features=max_features, max_leaf_nodes=max_leaf_nodes, class_weight='balanced')
     #dt = DecisionTreeClassifier()   
@@ -105,8 +106,6 @@ def runDT(train_x, train_y, test_x, test_y, max_depth, max_features, max_leaf_no
     print("getting statistics...\n")
 
     y_trainPred = dt.predict(train_x)
-    print(train_y)
-    print(y_trainPred)
     trainStats = get_infield_statistics(train_y, y_trainPred)
     train_accuracy = trainStats[0]
     train_averageError =  trainStats[1]
@@ -119,12 +118,14 @@ def runDT(train_x, train_y, test_x, test_y, max_depth, max_features, max_leaf_no
     train_stat = [train_accuracy, train_averageError]
     test_stat = [test_accuracy, test_averageError]
 
-    # CONFIG (add debug/print mode)
-    logs.logModel("DecisionTree", dt, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
-                   ["Max Tree Depth: ", max_depth, "Max Tree Features: ", max_features, "Max Leaf Nodes: ", max_leaf_nodes])
-    
-    logs.printModel("DecisionTree", dt, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
-                   ["Max Tree Depth: ", max_depth, "Max Tree Features: ", max_features, "Max Leaf Nodes: ", max_leaf_nodes])
+    if (config['LOGGING']['Logs'] == 'True'):
+        print("logging statistics...")
+        logs.logModel("DecisionTree", dt, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+                    ["Max Tree Depth: ", max_depth, "Max Tree Features: ", max_features, "Max Leaf Nodes: ", max_leaf_nodes])
+    if (config['LOGGING']['Debug'] == 'True'):
+        print("printing statistics...")
+        logs.printModel("DecisionTree", dt, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+                    ["Max Tree Depth: ", max_depth, "Max Tree Features: ", max_features, "Max Leaf Nodes: ", max_leaf_nodes])
     
     print("done!")
 
@@ -141,7 +142,7 @@ def runDT(train_x, train_y, test_x, test_y, max_depth, max_features, max_leaf_no
 # Ouput:
     # Naive Bayes Model, Training Accuracy, Testing Accuracy
 def runNB(train_x, train_y, test_x, test_y, var_smoothing):
-    if (config['MODELS']['NB'] == False):
+    if (config['MODELS']['NB'] == 'False'):
         return None, None, None
     nb = GaussianNB(var_smoothing=var_smoothing) #class_weight='balanced'
     
@@ -166,10 +167,13 @@ def runNB(train_x, train_y, test_x, test_y, var_smoothing):
     train_stat = [train_accuracy, train_averageError]
     test_stat = [test_accuracy, test_averageError]
     
-    logs.logModel("NaiveBayes", nb, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+    if (config['LOGGING']['Logs'] == 'True'):
+        print("logging statistics...")
+        logs.logModel("NaiveBayes", nb, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
                    ["Var Smoothing: ", var_smoothing])
-    
-    logs.printModel("NaiveBayes", nb, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+    if (config['LOGGING']['Debug'] == 'True'):
+        print("printing statistics...")
+        logs.printModel("NaiveBayes", nb, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
                    ["Var Smoothing: ", var_smoothing])
     
     print("done!")
@@ -187,7 +191,7 @@ def runNB(train_x, train_y, test_x, test_y, var_smoothing):
 # Ouput:
     # Logistic Regression Model, Training Accuracy, Testing Accuracy
 def runLogReg(train_x, train_y, test_x, test_y, lr, e):
-    if (config['MODELS']['LR'] == False):
+    if (config['MODELS']['LR'] == 'False'):
         return None, None, None
     
     logreg = LogisticRegression(C=lr, max_iter=e, class_weight='balanced')
@@ -212,12 +216,15 @@ def runLogReg(train_x, train_y, test_x, test_y, lr, e):
     train_stat = [train_accuracy, train_averageError]
     test_stat = [test_accuracy, test_averageError]
     
-    print("logging statistics...")
-    logs.logModel("LogisticRegression", logreg, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
-                   ["Learning Rate: ", lr, "Epochs: ", e])
     
-    logs.printModel("LogisticRegression", logreg, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+    if (config['LOGGING']['Logs'] == 'True'):
+        print("logging statistics...")
+        logs.logModel("LogisticRegression", logreg, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
                    ["Learning Rate: ", lr, "Epochs: ", e])
+    if (config['LOGGING']['Debug'] == 'True'):
+        print("printing statistics...")
+        logs.printModel("LogisticRegression", logreg, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+                    ["Learning Rate: ", lr, "Epochs: ", e])
     
     print("done!")
 
@@ -237,7 +244,7 @@ def runLogReg(train_x, train_y, test_x, test_y, lr, e):
 # Ouput:
     # SVM Model, Training Accuracy, Testing Accuracy
 def runSVM(train_x, train_y, test_x, test_y, rC, kernel, degree, gamma, coef0):
-    if (config['MODELS']['SVM'] == False):
+    if (config['MODELS']['SVM'] == 'False'):
         return None, None, None
     
     C = rC  # Regularization parameter
@@ -264,11 +271,14 @@ def runSVM(train_x, train_y, test_x, test_y, rC, kernel, degree, gamma, coef0):
     train_stat = [train_accuracy, train_averageError]
     test_stat = [test_accuracy, test_averageError]
     
-    logs.logModel("SVM", svm, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+    if (config['LOGGING']['Logs'] == 'True'):
+        print("logging statistics...")
+        logs.logModel("SVM", svm, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
                    ["Regularization Constant: ", rC, "Kernel Type: ", kernel, "Kernel Degree", degree, "Kernel Coefficient (gamma): ", gamma, "Independent Term in Kernel (coef0): ", coef0])
-    
-    logs.printModel("SVM", svm, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
-                   ["Regularization Constant: ", rC, "Kernel Type: ", kernel, "Kernel Degree", degree, "Kernel Coefficient (gamma): ", gamma, "Independent Term in Kernel (coef0): ", coef0])
+    if (config['LOGGING']['Debug'] == 'True'):
+        print("printing statistics...")
+        logs.printModel("SVM", svm, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+                    ["Regularization Constant: ", rC, "Kernel Type: ", kernel, "Kernel Degree", degree, "Kernel Coefficient (gamma): ", gamma, "Independent Term in Kernel (coef0): ", coef0])
 
     print("done!")
 

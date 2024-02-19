@@ -1,0 +1,48 @@
+Model Type: LogisticRegression
+
+Training Size = 42213
+Testing Size = 14072
+
+Training Accuracy = 0.3006182929429323
+Testing Accuracy = 0.30144968732234223
+
+Training Average Error = 1.1877620638192026
+Testing Average Error = 1.1840534394542355
+
+Hyper-Parameters: 
+
+Learning Rate: 0.8
+Epochs: 100
+
+Accuracy Score for Predicting on Training Data: 0.3006
+Accuracy Score for Predicting on Test Data: 0.3014
+
+Overall Average Probabilities
+-------------------------------------
+Section 1: 20.69%
+Section 2: 20.59%
+Section 3: 20.07%
+Section 4: 19.53%
+Section 5: 19.12%
+
+Field Slice Counts for Training Data
+--------------------------------------------------
+Section	Truth	Prediction
+1		7295		14980
+2		10967		9536
+3		10348		2854
+4		8483		3485
+5		5120		11358
+Amount Correct: 12690
+Amount Incorrect: 29523
+
+Field Slice Counts for Testing Data
+--------------------------------------------------
+Section	Truth	Prediction
+1		2513		5125
+2		3643		3164
+3		3427		906
+4		2881		1102
+5		1608		3775
+Amount Correct: 4242
+Amount Incorrect: 9830

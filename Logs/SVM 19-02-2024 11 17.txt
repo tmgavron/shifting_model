@@ -1,0 +1,51 @@
+Model Type: SVM
+
+Training Size = 42213
+Testing Size = 14072
+
+Training Accuracy = 0.2848411626750053
+Testing Accuracy = 0.27835417851051736
+
+Training Average Error = 1.2670504347002107
+Testing Average Error = 1.2634309266628767
+
+Hyper-Parameters: 
+
+Regularization Constant: 1
+Kernel Type: linear
+Kernel Degree1
+Kernel Coefficient (gamma): scale
+Independent Term in Kernel (coef0): 0.0
+
+Accuracy Score for Predicting on Training Data: 0.2848
+Accuracy Score for Predicting on Test Data: 0.2784
+
+Overall Average Probabilities
+-------------------------------------
+Section 1: 16.89%
+Section 2: 26.33%
+Section 3: 24.52%
+Section 4: 20.12%
+Section 5: 12.14%
+
+Field Slice Counts for Training Data
+--------------------------------------------------
+Section	Truth	Prediction
+1		7295		14935.0
+2		10967		13072.0
+3		10348		14206.0
+4		8483		nan
+5		5120		nan
+Amount Correct: 12024
+Amount Incorrect: 30189
+
+Field Slice Counts for Testing Data
+--------------------------------------------------
+Section	Truth	Prediction
+1		2513		5088.0
+2		3643		4279.0
+3		3427		4705.0
+4		2881		nan
+5		1608		nan
+Amount Correct: 3917
+Amount Incorrect: 10155

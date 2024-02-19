@@ -276,59 +276,45 @@ def normalizeData(df):
     # df: the fieldDataFrame
 # Output: the filtered DataFrame
 def infieldFilter(df):
-    # Setup headers
-    pitch_hit    = df[['PitcherThrows_Right','PitcherThrows_Left','BatterSide_Right','BatterSide_Left']]
-    tagged_pitch = df.filter(like='TaggedPitchType')
-    tagged_hit   = df[['TaggedHitType_GroundBall']]
-    pitch_info   = df[['ZoneSpeed','PlateLocHeight','PlateLocSide','VertApprAngle','HorzApprAngle','RelSpeed']]
-    hit_info     = df[['Direction','Distance']]
+    if("True" in config['DATA']['USE_NEW_PREPROCESSING']):
+        # Setup headers
+        pitch_hit    = df[['PitcherThrows_Right','PitcherThrows_Left','BatterSide_Right','BatterSide_Left']]
+        tagged_pitch = df.filter(like='TaggedPitchType')
+        tagged_hit   = df[['TaggedHitType_GroundBall']]
+        pitch_info   = df[['ZoneSpeed','PlateLocHeight','PlateLocSide','VertApprAngle','HorzApprAngle','RelSpeed']]
+        hit_info     = df[['Direction','Distance']]
 
-    bins = [-45, -27, -9, 9, 27, 45]
-    labels = [1,2,3,4,5]
-    hit_info["FieldSlice"] = pd.cut(hit_info["Direction"], bins=bins, labels=labels)
+        bins = [-45, -27, -9, 9, 27, 45]
+        labels = [1,2,3,4,5]
+        hit_info["FieldSlice"] = pd.cut(hit_info["Direction"], bins=bins, labels=labels)
 
-    filtered_df = pd.concat([pitch_hit,tagged_pitch,tagged_hit,pitch_info], axis=1)
-    filtered_x  = filtered_df.columns.tolist()
-    filtered_df = pd.concat([filtered_df,hit_info], axis=1)
+        filtered_df = pd.concat([pitch_hit,tagged_pitch,tagged_hit,pitch_info], axis=1)
+        filtered_x  = filtered_df.columns.tolist()
+        filtered_df = pd.concat([filtered_df,hit_info], axis=1)
 
-    # Filter rows that don't meet the criteria
-    filtered_df = filtered_df[(filtered_df['TaggedHitType_GroundBall'] == 1) | (filtered_df['Distance'] <= 0.35)] # 0.35 is approx grassline
+        # Filter rows that don't meet the criteria
+        filtered_df = filtered_df[(filtered_df['TaggedHitType_GroundBall'] == 1) | (filtered_df['Distance'] <= 0.35)] # 0.35 is approx grassline
+        return filtered_df, filtered_x
 
-
-    # ----- PREVIOUS FILTERING -----
-    # df = df[["PitcherId","BatterId","TaggedPitchType","PitchCall","TaggedHitType","Direction","HitLaunchConfidence"]]
-    # ^^^ That one was from before decision to do All Hitters vs PitchType
-    # df = df[["PitcherThrows", "BatterSide", "TaggedPitchType", "PitchCall", "TaggedHitType", "ZoneSpeed", "PlateLocHeight", "PlateLocSide", "Direction"]]
-    #df = df[df["PitcherThrows"].isin(["Left", "Right", "Both"])] # 1, 2, 3 (can remove Both)
-    #df["PitcherThrows"] = df["PitcherThrows"].map({"Left":1, "Right":2, "Both":3})
-    #df = df[df["BatterSide"].isin(["Left","Right"])] # 1, 2
-    #df["BatterSide"] = df["BatterSide"].map({"Left":1, "Right":2})
-    #df = df[df["TaggedPitchType"].isin(["Fastball", "Sinker", "Cutter", "Curveball", "Slider", "Changeup", "Splitter", "Knuckleball"])] # 1,2,3,4,5,6,7,8
-    #df["TaggedPitchType"] = df["TaggedPitchType"].map({"Fastball":1, "Sinker":2, "Cutter":3, "Curveball":4, "Slider":5, "Changeup":6, "Splitter":7, "Knuckleball":8})
-    #df = df[df["PitchCall"].str.contains("InPlay")]
-    #df = df[df["TaggedHitType"].str.contains("GroundBall")]
-    # df = df[df["Direction"].between(-45, 45)]
-    # bins = [-45, -27, -9, 9, 27, 45]
-    # labels = [1,2,3,4,5]
-    # filtered_df["FieldSlice"] = pd.cut(filtered_df["Direction"], bins=bins, labels=labels)
-    #df = df[df["PitcherThrows"].isin(["Left", "Right", "Both"])] # 1, 2, 3 (can remove Both)
-    #df["PitcherThrows"] = df["PitcherThrows"].map({"Left":1, "Right":2, "Both":3})
-    #df = df[df["BatterSide"].isin(["Left","Right"])] # 1, 2
-    #df["BatterSide"] = df["BatterSide"].map({"Left":1, "Right":2})
-    #df = df[df["TaggedPitchType"].isin(["Fastball", "Sinker", "Cutter", "Curveball", "Slider", "Changeup", "Splitter", "Knuckleball"])] # 1,2,3,4,5,6,7,8
-    #df["TaggedPitchType"] = df["TaggedPitchType"].map({"Fastball":1, "Sinker":2, "Cutter":3, "Curveball":4, "Slider":5, "Changeup":6, "Splitter":7, "Knuckleball":8})
-    #df = df[df["PitchCall"].str.contains("InPlay")]
-    #df = df[df["TaggedHitType"].str.contains("GroundBall")]
-    #df = df[df["Direction"].between(-45, 45)]
-    #bins = [-45, -27, -9, 9, 27, 45]
-    #labels = [1,2,3,4,5]
-    #df["FieldSlice"] = pd.cut(df["Direction"], bins=bins, labels=labels)
-    # df = df[df["HitLaunchConfidence"].isin(["Medium","High"])]
-    # print("--")
-    # print(df)
-    # print("--")
-
-    return filtered_df, filtered_x
+    else:
+        # ----- PREVIOUS FILTERING -----
+        df = df[df["PitcherThrows"].isin(["Left", "Right", "Both"])] # 1, 2, 3 (can remove Both)
+        df["PitcherThrows"] = df["PitcherThrows"].map({"Left":1, "Right":2, "Both":3})
+        df = df[df["BatterSide"].isin(["Left","Right"])] # 1, 2
+        df["BatterSide"] = df["BatterSide"].map({"Left":1, "Right":2})
+        df = df[df["TaggedPitchType"].isin(["Fastball", "Sinker", "Cutter", "Curveball", "Slider", "Changeup", "Splitter", "Knuckleball"])] # 1,2,3,4,5,6,7,8
+        df["TaggedPitchType"] = df["TaggedPitchType"].map({"Fastball":1, "Sinker":2, "Cutter":3, "Curveball":4, "Slider":5, "Changeup":6, "Splitter":7, "Knuckleball":8})
+        df = df[df["PitchCall"].str.contains("InPlay")]
+        df = df[df["TaggedHitType"].str.contains("GroundBall")]
+        df = df[df["Direction"].between(-45, 45)]
+        bins = [-45, -27, -9, 9, 27, 45]
+        labels = [1,2,3,4,5]
+        df["FieldSlice"] = pd.cut(df["Direction"], bins=bins, labels=labels)
+        # df = df[df["HitLaunchConfidence"].isin(["Medium","High"])]
+        # print("--")
+        # print(df)
+        # print("--")
+        return df
 
 # This function filters the given Pandas DataFrame specifically for outfield data fields. These fields are used just for initial testing and
 #   training of the Models
@@ -337,42 +323,31 @@ def infieldFilter(df):
 # Output: the filtered DataFrame
 def outfieldFilter(df):
     # Setup headers
-    pitch_hit    = df[['PitcherThrows_Right','PitcherThrows_Left','BatterSide_Right','BatterSide_Left']]
-    tagged_pitch = df.filter(like='TaggedPitchType')
-    tagged_hit   = df[['TaggedHitType_FlyBall','TaggedHitType_LineDrive']]
-    pitch_info   = df[['ZoneSpeed','PlateLocHeight','PlateLocSide','VertApprAngle','HorzApprAngle','RelSpeed']]
-    hit_info     = df[['Direction','Distance']]
+    if("True" in config['DATA']['USE_NEW_PREPROCESSING']):
+        pitch_hit    = df[['PitcherThrows_Right','PitcherThrows_Left','BatterSide_Right','BatterSide_Left']]
+        tagged_pitch = df.filter(like='TaggedPitchType')
+        tagged_hit   = df[['TaggedHitType_FlyBall','TaggedHitType_LineDrive']]
+        pitch_info   = df[['ZoneSpeed','PlateLocHeight','PlateLocSide','VertApprAngle','HorzApprAngle','RelSpeed']]
+        hit_info     = df[['Direction','Distance']]
 
-    bins = [-45, -27, -9, 9, 27, 45]
-    labels = [1,2,3,4,5]
-    hit_info["FieldSlice"] = pd.cut(hit_info["Direction"], bins=bins, labels=labels)
+        filtered_df = pd.concat([pitch_hit,tagged_pitch,tagged_hit,pitch_info], axis=1)
+        filtered_x  = filtered_df.columns.tolist()
+        filtered_df = pd.concat([filtered_df,hit_info], axis=1)
 
-    filtered_df = pd.concat([pitch_hit,tagged_pitch,tagged_hit,pitch_info], axis=1)
-    filtered_x  = filtered_df.columns.tolist()
-    filtered_df = pd.concat([filtered_df,hit_info], axis=1)
-
-    # Filter rows that don't meet the criteria
-    filtered_df = filtered_df[((filtered_df['TaggedHitType_FlyBall'] == 1) | (filtered_df['TaggedHitType_LineDrive'] == 1)) & (filtered_df['Distance'] > 0.35)] # 0.35 is approx grassline
-
-    # ----- PREVIOUS FILTERING -----
-    # df = df[["PitcherId","BatterId","TaggedPitchType","PitchCall","TaggedHitType","Bearing","Distance","HitLandingConfidence"]]
-    #df = df[df["PitchCall"].str.contains("InPlay")]
-    #df = df[df["TaggedHitType"].isin(["FlyBall","LineDrive"])]
-    #df = df[df["Distance"] >= 150]
-    # df = df[df["Bearing"].between(-45, 45)]
-    # bins = [-45, -27, -9, 9, 27, 45]
-    # labels = [1,2,3,4,5]
-    # # THIS WAS BEARING BEFORE BUT HAS BEEN CHANGED TO DISTANCE FOR NOW
-    # filtered_df['FieldSlice'] = pd.cut(filtered_df['Distance'], bins=bins, labels=labels)
-    #df = df[df["PitchCall"].str.contains("InPlay")]
-    #df = df[df["TaggedHitType"].isin(["FlyBall","LineDrive"])]
-    #df = df[df["Distance"] >= 150]
-    #df = df[df["Bearing"].between(-45, 45)]
-    #bins = [-45, -27, -9, 9, 27, 45]
-    #labels = [1,2,3,4,5]
-    #df['FieldSlice'] = pd.cut(df['Bearing'], bins=bins, labels=labels)
-    # df = df[df["HitLandingConfidence"].isin(["Medium","High"])]
-    return filtered_df, filtered_x
+        # Filter rows that don't meet the criteria
+        filtered_df = filtered_df[((filtered_df['TaggedHitType_FlyBall'] == 1) | (filtered_df['TaggedHitType_LineDrive'] == 1)) & (filtered_df['Distance'] > 0.35)] # 0.35 is approx grassline
+        return filtered_df, filtered_x
+    else:
+        # ----- PREVIOUS FILTERING -----
+        df = df[df["PitchCall"].str.contains("InPlay")]
+        df = df[df["TaggedHitType"].isin(["FlyBall","LineDrive"])]
+        df = df[df["Distance"] >= 150]
+        df = df[df["Bearing"].between(-45, 45)]
+        bins = [-45, -27, -9, 9, 27, 45]
+        labels = [1,2,3,4,5]
+        df['FieldSlice'] = pd.cut(df['Bearing'], bins=bins, labels=labels)
+        # df = df[df["HitLandingConfidence"].isin(["Medium","High"])]
+        return df
 
 
 # This function finds the index of a given column in a dataset

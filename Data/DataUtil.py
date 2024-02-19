@@ -283,6 +283,10 @@ def infieldFilter(df):
     pitch_info   = df[['ZoneSpeed','PlateLocHeight','PlateLocSide','VertApprAngle','HorzApprAngle','RelSpeed']]
     hit_info     = df[['Direction','Distance']]
 
+    bins = [-45, -27, -9, 9, 27, 45]
+    labels = [1,2,3,4,5]
+    hit_info["FieldSlice"] = pd.cut(hit_info["Direction"], bins=bins, labels=labels)
+
     filtered_df = pd.concat([pitch_hit,tagged_pitch,tagged_hit,pitch_info], axis=1)
     filtered_x  = filtered_df.columns.tolist()
     filtered_df = pd.concat([filtered_df,hit_info], axis=1)
@@ -304,9 +308,9 @@ def infieldFilter(df):
     #df = df[df["PitchCall"].str.contains("InPlay")]
     #df = df[df["TaggedHitType"].str.contains("GroundBall")]
     # df = df[df["Direction"].between(-45, 45)]
-    bins = [-45, -27, -9, 9, 27, 45]
-    labels = [1,2,3,4,5]
-    filtered_df["FieldSlice"] = pd.cut(filtered_df["Direction"], bins=bins, labels=labels)
+    # bins = [-45, -27, -9, 9, 27, 45]
+    # labels = [1,2,3,4,5]
+    # filtered_df["FieldSlice"] = pd.cut(filtered_df["Direction"], bins=bins, labels=labels)
     #df = df[df["PitcherThrows"].isin(["Left", "Right", "Both"])] # 1, 2, 3 (can remove Both)
     #df["PitcherThrows"] = df["PitcherThrows"].map({"Left":1, "Right":2, "Both":3})
     #df = df[df["BatterSide"].isin(["Left","Right"])] # 1, 2
@@ -339,6 +343,10 @@ def outfieldFilter(df):
     pitch_info   = df[['ZoneSpeed','PlateLocHeight','PlateLocSide','VertApprAngle','HorzApprAngle','RelSpeed']]
     hit_info     = df[['Direction','Distance']]
 
+    bins = [-45, -27, -9, 9, 27, 45]
+    labels = [1,2,3,4,5]
+    hit_info["FieldSlice"] = pd.cut(hit_info["Direction"], bins=bins, labels=labels)
+
     filtered_df = pd.concat([pitch_hit,tagged_pitch,tagged_hit,pitch_info], axis=1)
     filtered_x  = filtered_df.columns.tolist()
     filtered_df = pd.concat([filtered_df,hit_info], axis=1)
@@ -352,10 +360,10 @@ def outfieldFilter(df):
     #df = df[df["TaggedHitType"].isin(["FlyBall","LineDrive"])]
     #df = df[df["Distance"] >= 150]
     # df = df[df["Bearing"].between(-45, 45)]
-    bins = [-45, -27, -9, 9, 27, 45]
-    labels = [1,2,3,4,5]
-    # THIS WAS BEARING BEFORE BUT HAS BEEN CHANGED TO DISTANCE FOR NOW
-    filtered_df['FieldSlice'] = pd.cut(filtered_df['Distance'], bins=bins, labels=labels)
+    # bins = [-45, -27, -9, 9, 27, 45]
+    # labels = [1,2,3,4,5]
+    # # THIS WAS BEARING BEFORE BUT HAS BEEN CHANGED TO DISTANCE FOR NOW
+    # filtered_df['FieldSlice'] = pd.cut(filtered_df['Distance'], bins=bins, labels=labels)
     #df = df[df["PitchCall"].str.contains("InPlay")]
     #df = df[df["TaggedHitType"].isin(["FlyBall","LineDrive"])]
     #df = df[df["Distance"] >= 150]

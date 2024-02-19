@@ -71,8 +71,8 @@ def logModel(modelType, model, train_stats, test_stats, data, params):
     dfTrainStats["Correct"] = dftemp.groupby(["FieldSliceActual"]).size().reset_index()[0]
 
 
-    log.append("Accuracy Score for Predicting on Training Data: " + str('{:.4f}'.format(train_acc)))
-    log.append("Accuracy Score for Predicting on Test Data: " + str('{:.4f}'.format(test_acc)))
+    log.append("Accuracy Score for Predicting on Training Data: " + str('{:.4f}'.format(train_stats[0])))
+    log.append("Accuracy Score for Predicting on Test Data: " + str('{:.4f}'.format(test_stats[0])))
 
     probs = model.predict_proba(test_x)
     colprob = colsum(probs, len(probs[0]), len(probs))
@@ -163,8 +163,8 @@ def printModel(modelType, model, train_stats, test_stats, data, params):
     dfTrainStats["Correct"] = dftemp.groupby(["FieldSliceActual"]).size().reset_index()[0]
 
 
-    print("Accuracy Score for Predicting on Training Data: " + str('{:.4f}'.format(train_acc)))
-    print("Accuracy Score for Predicting on Test Data: " + str('{:.4f}'.format(test_acc)))
+    print("Accuracy Score for Predicting on Training Data: " + str('{:.4f}'.format(train_stats[1])))
+    print("Accuracy Score for Predicting on Test Data: " + str('{:.4f}'.format(test_stats[0])))
 
     probs = model.predict_proba(test_x)
     colprob = colsum(probs, len(probs[0]), len(probs))

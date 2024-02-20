@@ -14,7 +14,7 @@ config.read('Data//config.ini')
 
 # All the values we believe will be most important to the model
 listOfCols = ["PitcherId", "BatterId", "PitcherThrows", "BatterSide", "TaggedPitchType", "AutoPitchType", "PitchCall", "TaggedHitType", "PlayResult", 
-              "RelSpeed", "VertRelAngle", "HorzRelAngle", "SpinRate", "SpinAxis", "InducedVertBreak", "PlateLocHeight", "PlateLocSide",
+              "RelSpeed", "RelHeight", "RelSide", "VertRelAngle", "HorzRelAngle", "SpinRate", "SpinAxis", "InducedVertBreak", "VertBreak", "HorzBreak", "PlateLocHeight", "PlateLocSide",
               "ZoneSpeed", "VertApprAngle", "HorzApprAngle", "ExitSpeed", "Angle", "HitSpinRate", "PositionAt110X", "PositionAt110Y",
               "PositionAt110Z", "Distance", "Direction", "Bearing", "HitLaunchConfidence", "HitLandingConfidence"]
 
@@ -206,11 +206,15 @@ def getRawDataFrame(filename):
             raw_row.append(str(row[indexDic["PlayResult"]])) # PlayResult
             # Pitch Stats:
             raw_row.append(safe_float_conversion(row[indexDic["RelSpeed"]])) # RelSpeed
+            raw_row.append(safe_float_conversion(row[indexDic["RelHeight"]])) # RelHeight
+            raw_row.append(safe_float_conversion(row[indexDic["RelSide"]])) # RelSide
             raw_row.append(safe_float_conversion(row[indexDic["VertRelAngle"]])) # VertRelAngle
             raw_row.append(safe_float_conversion(row[indexDic["HorzRelAngle"]])) # HorzRelAngle
             raw_row.append(safe_float_conversion(row[indexDic["SpinRate"]])) # SpinRate
             raw_row.append(safe_float_conversion(row[indexDic["SpinAxis"]])) # SpinAxis
             raw_row.append(safe_float_conversion(row[indexDic["InducedVertBreak"]])) # InducedVertBreak
+            raw_row.append(safe_float_conversion(row[indexDic["VertBreak"]])) # VertBreak
+            raw_row.append(safe_float_conversion(row[indexDic["HorzBreak"]])) # HorzBreak
             raw_row.append(safe_float_conversion(row[indexDic["PlateLocHeight"]])) # PlateLocHeight
             raw_row.append(safe_float_conversion(row[indexDic["PlateLocSide"]])) # PlateLocSide
             raw_row.append(safe_float_conversion(row[indexDic["ZoneSpeed"]])) # ZoneSpeed

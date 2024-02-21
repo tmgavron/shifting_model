@@ -9,6 +9,9 @@ Testing Accuracy = 0.32227117680500283
 Training Average Error = 0.9562220169142207
 Testing Average Error = 0.9404491188175099
 
+Training Recall = [0.0, 0.8033190480532506, 0.0, 0.5206884356949193, 0.0]
+Testing Recall = [0.0, 0.8188306340927807, 0.0, 0.5387018396390142, 0.0]
+
 Hyper-Parameters: 
 
 Regularization Constant: 1
@@ -22,11 +25,11 @@ Accuracy Score for Predicting on Test Data: 0.3223
 
 Overall Average Probabilities
 -------------------------------------
-Section 1: 16.98%
-Section 2: 26.34%
-Section 3: 24.40%
-Section 4: 20.21%
-Section 5: 12.07%
+Section 1: 16.70%
+Section 2: 26.42%
+Section 3: 24.94%
+Section 4: 20.40%
+Section 5: 11.54%
 
 Field Slice Counts for Training Data
 --------------------------------------------------

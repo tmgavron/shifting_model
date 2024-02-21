@@ -456,12 +456,26 @@ def get_infield_statistics(pred, y_test):
         accuracy = totalTrue / len(y_test)
 
         recall = []
-        recall.append(true1 / (true1 + false1))
-        recall.append(true2 / (true2 + false2))
-        recall.append(true3 / (true3 + false3))
-        recall.append(true4 / (true4 + false4))
-        recall.append(true5 / (true5 + false5))
-
+        try:
+            recall.append(true1 / (true1 + false1))
+        except ZeroDivisionError:
+            recall.append("No Values")
+        try:
+            recall.append(true2 / (true2 + false2))
+        except ZeroDivisionError:
+            recall.append("No Values")
+        try:
+            recall.append(true3 / (true3 + false3))
+        except ZeroDivisionError:
+            recall.append("No Values")
+        try:
+            recall.append(true4 / (true4 + false4))
+        except ZeroDivisionError:
+            recall.append("No Values")
+        try:
+            recall.append(true5 / (true5 + false5))
+        except ZeroDivisionError:
+            recall.append("No Values")
         averageError = totalError / len(y_test)
 
 

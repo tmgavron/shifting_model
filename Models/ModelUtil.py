@@ -107,29 +107,22 @@ def runDT(train_x, train_y, test_x, test_y, max_depth, max_features, max_leaf_no
 
     y_trainPred = dt.predict(train_x)
     trainStats = get_infield_statistics(train_y, y_trainPred)
-    train_accuracy = trainStats[0]
-    train_averageError =  trainStats[1]
 
     y_pred = dt.predict(test_x)
     testStats = get_infield_statistics(test_y, y_pred)
-    test_accuracy = testStats[0]
-    test_averageError = testStats[1]
-
-    train_stat = [train_accuracy, train_averageError]
-    test_stat = [test_accuracy, test_averageError]
 
     if (config['LOGGING']['Logs'] == 'True'):
         print("logging statistics...")
-        logs.logModel("DecisionTree", dt, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+        logs.logModel("DecisionTree", dt, trainStats, testStats, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
                     ["Max Tree Depth: ", max_depth, "Max Tree Features: ", max_features, "Max Leaf Nodes: ", max_leaf_nodes])
     if (config['LOGGING']['Debug'] == 'True'):
         print("printing statistics...")
-        logs.printModel("DecisionTree", dt, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+        logs.printModel("DecisionTree", dt, trainStats, testStats, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
                     ["Max Tree Depth: ", max_depth, "Max Tree Features: ", max_features, "Max Leaf Nodes: ", max_leaf_nodes])
     
     print("done!")
 
-    return dt, train_accuracy, test_accuracy
+    return dt, trainStats, testStats
 
 
 # Run Naive Bayes Training and Testing
@@ -156,29 +149,23 @@ def runNB(train_x, train_y, test_x, test_y, var_smoothing):
 
     y_trainPred = nb.predict(train_x)
     trainStats = get_infield_statistics(train_y, y_trainPred)
-    train_accuracy = trainStats[0]
-    train_averageError = trainStats[1]
 
     y_pred = nb.predict(test_x)
     testStats = get_infield_statistics(test_y, y_pred)
-    test_accuracy = testStats[0]
-    test_averageError = testStats[1]
 
-    train_stat = [train_accuracy, train_averageError]
-    test_stat = [test_accuracy, test_averageError]
     
     if (config['LOGGING']['Logs'] == 'True'):
         print("logging statistics...")
-        logs.logModel("NaiveBayes", nb, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+        logs.logModel("NaiveBayes", nb, trainStats, testStats, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
                    ["Var Smoothing: ", var_smoothing])
     if (config['LOGGING']['Debug'] == 'True'):
         print("printing statistics...")
-        logs.printModel("NaiveBayes", nb, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+        logs.printModel("NaiveBayes", nb, trainStats, testStats, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
                    ["Var Smoothing: ", var_smoothing])
     
     print("done!")
 
-    return nb, train_accuracy, test_accuracy
+    return nb, trainStats, testStats
 
 # Run Logistic Regression Training and Testing
 # Inputs:
@@ -205,30 +192,23 @@ def runLogReg(train_x, train_y, test_x, test_y, lr, e):
 
     y_trainPred = logreg.predict(train_x)
     trainStats = get_infield_statistics(train_y, y_trainPred)
-    train_accuracy = trainStats[0]
-    train_averageError = trainStats[1]
 
     y_pred = logreg.predict(test_x)
     testStats = get_infield_statistics(test_y, y_pred)
-    test_accuracy = testStats[0]
-    test_averageError = testStats[1]
-
-    train_stat = [train_accuracy, train_averageError]
-    test_stat = [test_accuracy, test_averageError]
     
     
     if (config['LOGGING']['Logs'] == 'True'):
         print("logging statistics...")
-        logs.logModel("LogisticRegression", logreg, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+        logs.logModel("LogisticRegression", logreg, trainStats, testStats, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
                    ["Learning Rate: ", lr, "Epochs: ", e])
     if (config['LOGGING']['Debug'] == 'True'):
         print("printing statistics...")
-        logs.printModel("LogisticRegression", logreg, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+        logs.printModel("LogisticRegression", logreg, trainStats, testStats, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
                     ["Learning Rate: ", lr, "Epochs: ", e])
     
     print("done!")
 
-    return logreg, train_accuracy, test_accuracy
+    return logreg, trainStats, testStats
 
 # Run Support Vector Machine Training and Testing
 # Inputs:
@@ -260,29 +240,22 @@ def runSVM(train_x, train_y, test_x, test_y, rC, kernel, degree, gamma, coef0):
 
     y_trainPred = svm.predict(train_x)
     trainStats = get_infield_statistics(train_y, y_trainPred)
-    train_accuracy = trainStats[0]
-    train_averageError = trainStats[1]
 
     y_pred = svm.predict(test_x)
     testStats = get_infield_statistics(test_y, y_pred)
-    test_accuracy = testStats[0]
-    test_averageError = testStats[1]
 
-    train_stat = [train_accuracy, train_averageError]
-    test_stat = [test_accuracy, test_averageError]
-    
     if (config['LOGGING']['Logs'] == 'True'):
         print("logging statistics...")
-        logs.logModel("SVM", svm, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+        logs.logModel("SVM", svm, trainStats, testStats, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
                    ["Regularization Constant: ", rC, "Kernel Type: ", kernel, "Kernel Degree", degree, "Kernel Coefficient (gamma): ", gamma, "Independent Term in Kernel (coef0): ", coef0])
     if (config['LOGGING']['Debug'] == 'True'):
         print("printing statistics...")
-        logs.printModel("SVM", svm, train_stat, test_stat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+        logs.printModel("SVM", svm, trainStats, testStats, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
                     ["Regularization Constant: ", rC, "Kernel Type: ", kernel, "Kernel Degree", degree, "Kernel Coefficient (gamma): ", gamma, "Independent Term in Kernel (coef0): ", coef0])
 
     print("done!")
 
-    return svm, train_accuracy, test_accuracy
+    return svm, trainStats, testStats
 
 # Run Random Forest Regressor
 # Inputs:
@@ -482,8 +455,15 @@ def get_infield_statistics(pred, y_test):
         totalTrue = true1 + true2 + true3 + true4 + true5
         accuracy = totalTrue / len(y_test)
 
+        recall = []
+        recall.append(true1 / (true1 + false1))
+        recall.append(true2 / (true2 + false2))
+        recall.append(true3 / (true3 + false3))
+        recall.append(true4 / (true4 + false4))
+        recall.append(true5 / (true5 + false5))
+
         averageError = totalError / len(y_test)
 
 
-    return accuracy, averageError
+    return accuracy, averageError, recall
 

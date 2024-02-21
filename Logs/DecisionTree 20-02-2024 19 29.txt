@@ -1,0 +1,49 @@
+Model Type: DecisionTree
+
+Training Size = 42213
+Testing Size = 14072
+
+Training Accuracy = 0.3602918532205719
+Testing Accuracy = 0.3374786810687891
+
+Training Average Error = 0.9426243100466681
+Testing Average Error = 0.969300739056282
+
+Hyper-Parameters: 
+
+Max Tree Depth: 50
+Max Tree Features: 30
+Max Leaf Nodes: 150
+
+Accuracy Score for Predicting on Training Data: 0.3603
+Accuracy Score for Predicting on Test Data: 0.3375
+
+Overall Average Probabilities
+-------------------------------------
+Section 1: 17.45%
+Section 2: 26.01%
+Section 3: 24.44%
+Section 4: 20.03%
+Section 5: 12.07%
+
+Field Slice Counts for Training Data
+--------------------------------------------------
+Section	Truth	Prediction
+1		7295		6578
+2		10967		17975
+3		10348		6147
+4		8483		8966
+5		5120		2547
+Amount Correct: 15209
+Amount Incorrect: 27004
+
+Field Slice Counts for Testing Data
+--------------------------------------------------
+Section	Truth	Prediction
+1		2513		2221
+2		3643		6002
+3		3427		2047
+4		2881		2958
+5		1608		844
+Amount Correct: 4749
+Amount Incorrect: 9323

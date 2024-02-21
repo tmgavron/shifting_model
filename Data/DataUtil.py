@@ -240,6 +240,7 @@ def getRawDataFrame(filename):
 
     # Create dataframe
     raw_dataframe = pd.DataFrame(raw_data, columns=listOfCols)
+    raw_dataframe.dropna(axis=0, how='any')        
     return raw_dataframe
 
 def trimData(df):
@@ -318,6 +319,7 @@ def infieldFilter(df):
         # print("--")
         # print(df)
         # print("--")
+        
         return df
 
 # This function filters the given Pandas DataFrame specifically for outfield data fields. These fields are used just for initial testing and

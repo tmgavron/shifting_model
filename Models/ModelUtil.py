@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
-from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.metrics import accuracy_score, confusion_matrix, f1_score, roc_auc_score
+from sklearn.preprocessing import label_binarize
 import pandas as pd
 import numpy as np
 import math
@@ -106,10 +107,12 @@ def runDT(train_x, train_y, test_x, test_y, max_depth, max_features, max_leaf_no
     print("getting statistics...\n")
 
     y_trainPred = dt.predict(train_x)
-    trainStats = get_infield_statistics(train_y, y_trainPred)
+    y_trainProb = dt.predict_proba(train_x)
+    trainStats = get_infield_statistics(train_y, y_trainPred, y_trainProb)
 
     y_pred = dt.predict(test_x)
-    testStats = get_infield_statistics(test_y, y_pred)
+    y_predProb = dt.predict_proba(test_x)
+    testStats = get_infield_statistics(test_y, y_pred, y_predProb)
 
     if (config['LOGGING']['Logs'] == 'True'):
         print("logging statistics...")
@@ -148,10 +151,12 @@ def runNB(train_x, train_y, test_x, test_y, var_smoothing):
     print("getting statistics...")
 
     y_trainPred = nb.predict(train_x)
-    trainStats = get_infield_statistics(train_y, y_trainPred)
+    y_trainProb = nb.predict_proba(train_x)
+    trainStats = get_infield_statistics(train_y, y_trainPred, y_trainProb)
 
     y_pred = nb.predict(test_x)
-    testStats = get_infield_statistics(test_y, y_pred)
+    y_predProb = nb.predict_proba(test_x)
+    testStats = get_infield_statistics(test_y, y_pred, y_predProb)
 
     
     if (config['LOGGING']['Logs'] == 'True'):
@@ -191,10 +196,12 @@ def runLogReg(train_x, train_y, test_x, test_y, lr, e):
     print("getting statistics...")
 
     y_trainPred = logreg.predict(train_x)
-    trainStats = get_infield_statistics(train_y, y_trainPred)
+    y_trainProb = logreg.predict_proba(train_x)
+    trainStats = get_infield_statistics(train_y, y_trainPred, y_trainProb)
 
     y_pred = logreg.predict(test_x)
-    testStats = get_infield_statistics(test_y, y_pred)
+    y_predProb = logreg.predict_proba(test_x)
+    testStats = get_infield_statistics(test_y, y_pred, y_predProb)
     
     
     if (config['LOGGING']['Logs'] == 'True'):
@@ -239,10 +246,12 @@ def runSVM(train_x, train_y, test_x, test_y, rC, kernel, degree, gamma, coef0):
     print("getting statistics...")
 
     y_trainPred = svm.predict(train_x)
-    trainStats = get_infield_statistics(train_y, y_trainPred)
+    y_trainProb = svm.predict_proba(train_x)
+    trainStats = get_infield_statistics(train_y, y_trainPred, y_trainProb)
 
     y_pred = svm.predict(test_x)
-    testStats = get_infield_statistics(test_y, y_pred)
+    y_predProb = svm.predict_proba(test_x)
+    testStats = get_infield_statistics(test_y, y_pred, y_predProb)
 
     if (config['LOGGING']['Logs'] == 'True'):
         print("logging statistics...")
@@ -405,7 +414,7 @@ def convertAngleToSlice(angle):
     # y_test: actual values
 # Output:
     # accuracy
-def get_infield_statistics(pred, y_test):
+def get_infield_statistics(pred, y_test, probs):
     true1 = 0
     true2 = 0
     true3 = 0
@@ -452,32 +461,49 @@ def get_infield_statistics(pred, y_test):
 
         index += 1
 
-        totalTrue = true1 + true2 + true3 + true4 + true5
-        accuracy = totalTrue / len(y_test)
+    totalTrue = true1 + true2 + true3 + true4 + true5
+    accuracy = totalTrue / len(y_test)
 
-        recall = []
-        try:
-            recall.append(true1 / (true1 + false1))
-        except ZeroDivisionError:
-            recall.append("No Values")
-        try:
-            recall.append(true2 / (true2 + false2))
-        except ZeroDivisionError:
-            recall.append("No Values")
-        try:
-            recall.append(true3 / (true3 + false3))
-        except ZeroDivisionError:
-            recall.append("No Values")
-        try:
-            recall.append(true4 / (true4 + false4))
-        except ZeroDivisionError:
-            recall.append("No Values")
-        try:
-            recall.append(true5 / (true5 + false5))
-        except ZeroDivisionError:
-            recall.append("No Values")
-        averageError = totalError / len(y_test)
+    # Calculate Recall
+    recall = []
+    try:
+        recall.append(true1 / (true1 + false1))
+    except ZeroDivisionError:
+        recall.append("No Values")
+    try:
+        recall.append(true2 / (true2 + false2))
+    except ZeroDivisionError:
+        recall.append("No Values")
+    try:
+        recall.append(true3 / (true3 + false3))
+    except ZeroDivisionError:
+        recall.append("No Values")
+    try:
+        recall.append(true4 / (true4 + false4))
+    except ZeroDivisionError:
+        recall.append("No Values")
+    try:
+        recall.append(true5 / (true5 + false5))
+    except ZeroDivisionError:
+        recall.append("No Values")
+    averageError = totalError / len(y_test)
 
+    # Calculate F1 Scores
+    f1_micro = f1_score(y_test, pred, average='micro')
+    f1_macro = f1_score(y_test, pred, average='macro')
+    f1_weighted = f1_score(y_test, pred, average='weighted')
+    f1 = [f1_micro, f1_macro, f1_weighted]
 
-    return accuracy, averageError, recall
+    # For AUC, we need to binarize the labels for multiclass scenario
+    y_true_binarized = label_binarize(y_test, classes=[1, 2, 3, 4, 5])
+
+    # AUC (One-vs-Rest)
+    # Since AUC is typically used for binary classification, we apply it in a One-vs-Rest manner for multiclass
+    try:
+        auc_macro = roc_auc_score(y_true_binarized, probs, average='macro', multi_class='ovr')
+        auc_weighted = roc_auc_score(y_true_binarized, probs, average='weighted', multi_class='ovr')
+        auc = [auc_macro, auc_weighted]
+    except:
+        auc = "Error"
+    return accuracy, averageError, recall, f1, auc
 

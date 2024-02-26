@@ -30,7 +30,14 @@ def logModel(modelType, model, train_stats, test_stats, data, params):
     log.append("")
     log.append(f"Training Recall = {train_stats[2]}")
     log.append(f"Testing Recall = {test_stats[2]}")
-    
+    log.append("")
+    log.append(f"Training f1 (micro, macro, weighted) = {train_stats[3]}")
+    log.append(f"Testing f1 (micro, macro, weighted) = {test_stats[3]}")
+    log.append("")
+    log.append(f"Training auc (macro, weighted) = {train_stats[4]}")
+    log.append(f"Testing auc (macro, weighted) = {test_stats[4]}")
+
+
     log.append("")
     log.append("Hyper-Parameters: \n")
     i = 0
@@ -125,6 +132,12 @@ def printModel(modelType, model, train_stats, test_stats, data, params):
     print("")
     print(f"Training Recall = {train_stats[2]}")
     print(f"Testing Recall = {test_stats[2]}")
+    print("")
+    print(f"Training f1 (micro, macro, weighted) = {train_stats[3]}")
+    print(f"Testing f1 (micro, macro, weighted) = {test_stats[3]}")
+    print("")
+    print(f"Training auc (macro, weighted) = {train_stats[4]}")
+    print(f"Testing auc (macro, weighted) = {test_stats[4]}")
     
     print("")
     print("Hyper-Parameters: \n")

@@ -1,4 +1,6 @@
 from PIL import Image, ImageDraw, ImageFont
+import configparser
+import pandas as pd
 
 # Color Constants as RGBA tuples:
 navy_dark    = ( 12,  35,  64, 255) # Auburn Navy
@@ -9,12 +11,30 @@ white        = (255, 255, 255, 255) # White
 black        = (  0,   0,   0, 255) # Black
 transparent  = (255, 255, 255,   0) # Transparent
 
+config = configparser.ConfigParser()
+config.read('Data//config.ini')
+
 # Creates an image of a baseball field with slices colored based on the odds of being hit into. Also displays the percent chance on each slice.
 def visualizeData(infieldPercentages, outfieldPercentages):
     slices = infieldPercentages.__len__()
     fieldImage = Image.open('Visualization/Field2.png')
+
+    sliceImages = []
+    if('Slices' in config['VISUAL']['Infield']):
+        sliceImages += doFieldSlices(slices, infieldPercentages,  orange_dark, orange_light,  'infield')
+    if('Slices' in config['VISUAL']['Outfield']):
+        sliceImages += doFieldSlices(slices, outfieldPercentages, navy_dark, navy_light, 'outfield')
+    if('Heatmap' in config['VISUAL']['Infield']):
+        print("Infield Heatmap")
+    if('Heatmap' in config['VISUAL']['Outfield']):
+        print("Outfield Heatmap")
+    if('Blank' in config['VISUAL']['Infield']):
+        sliceImages += doFieldSlices(slices, [1/slices]*slices,  orange_dark, orange_light,  'infield')
+        infieldPercentages = []
+    if('Blank' in config['VISUAL']['Outfield']):
+        sliceImages += doFieldSlices(slices, [1/slices]*slices, navy_dark, navy_light, 'outfield')
+        outfieldPercentages = []
     
-    sliceImages = doFieldSlices(slices, infieldPercentages,  orange_dark, orange_light,  'infield') + doFieldSlices(slices, outfieldPercentages, navy_dark, navy_light, 'outfield')
     flatImage = layerImages(fieldImage, sliceImages)
     finalImage = addPercents(flatImage, infieldPercentages, outfieldPercentages)
 
@@ -23,18 +43,18 @@ def visualizeData(infieldPercentages, outfieldPercentages):
 def addPercents(image, infield, outfield):
     useFont = ImageFont.truetype("Visualization/Fonts/SweetSansProRegular.otf", 30)
     draw = ImageDraw.Draw(image)
-    # Infield
-    draw.text(( 610,920),cleanNumber(infield[0]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
-    draw.text(( 695,830),cleanNumber(infield[1]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
-    draw.text(( 814,800),cleanNumber(infield[2]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
-    draw.text(( 940,830),cleanNumber(infield[3]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
-    draw.text((1020,920),cleanNumber(infield[4]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
-    # Outfield
-    draw.text(( 240,425),cleanNumber(outfield[0]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
-    draw.text(( 522,300),cleanNumber(outfield[1]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
-    draw.text(( 814,250),cleanNumber(outfield[2]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
-    draw.text((1105,300),cleanNumber(outfield[3]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
-    draw.text((1387,425),cleanNumber(outfield[4]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
+    if(infield.__len__() != 0):
+        draw.text(( 610,920),cleanNumber(infield[0]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
+        draw.text(( 695,830),cleanNumber(infield[1]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
+        draw.text(( 814,800),cleanNumber(infield[2]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
+        draw.text(( 940,830),cleanNumber(infield[3]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
+        draw.text((1020,920),cleanNumber(infield[4]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
+    if(outfield.__len__() != 0):
+        draw.text(( 240,425),cleanNumber(outfield[0]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
+        draw.text(( 522,300),cleanNumber(outfield[1]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
+        draw.text(( 814,250),cleanNumber(outfield[2]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
+        draw.text((1105,300),cleanNumber(outfield[3]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
+        draw.text((1387,425),cleanNumber(outfield[4]),font=useFont,fill=black,align="center",anchor="mm",stroke_width=3,stroke_fill=white)
     return image
 
 # Creates a list of images for each slice of the field

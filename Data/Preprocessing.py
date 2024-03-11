@@ -18,7 +18,7 @@ import pandas
 
 # %%
 
-def dataProcessing(useNewProcessing):
+def dataProcessing():
     # 1) Read Data from file:
     importlib.reload(DataUtil)
     fieldDataFrame = DataUtil.getData()

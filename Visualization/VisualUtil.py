@@ -29,7 +29,7 @@ config.read('Data//config.ini')
 # Eventually:
 # int(config['VISUAL']['InfieldSlices'])
 # int(config['VISUAL']['OutfieldSlices'])
-def visualizeData(infieldPercentages, outfieldPercentages):
+def visualizeData(infieldPercentages, outfieldPercentages, filename):
     initializeFieldVariables()
     infield_slices  = infieldPercentages.__len__()
     outfield_slices = outfieldPercentages.__len__()
@@ -47,17 +47,17 @@ def visualizeData(infieldPercentages, outfieldPercentages):
         fillSlices(draw, infield_slices,  infieldPercentages,  DISTANCE_TO_FENCE, OUTFIELD_ARC,  ORANGE_LIGHT, ORANGE_DARK)
         drawOnlyInfield(draw, infield_slices)
 
-    surface.write_to_png('Visualization/FieldTest.png')
+    surface.write_to_png('Visualization/' + filename + '.png')
 
     # Write text on top of the image
-    image = Image.open('Visualization/FieldTest.png')
+    image = Image.open('Visualization/' + filename + '.png')
     if(config['VISUAL']['RenderOutfield']=='True'):
         image = addPercents(image, infield_slices,  infieldPercentages,  DISTANCE_TO_GRASS)
         image = addPercents(image, outfield_slices, outfieldPercentages, DISTANCE_TO_FENCE)
     else:
         image = addPercents(image, infield_slices,  infieldPercentages,  DISTANCE_TO_FENCE)
 
-    image.show()
+    image.save('Visualization/' + filename + '.png')
 
 
 # Top left corner is (0,0)

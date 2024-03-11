@@ -25,8 +25,8 @@ MOUND = None
 FOULL = None
 FOULR = None
 ANGLE = None
-FIELD_HEIGHT = 5
-FIELD_WIDTH  = 5
+FIELD_HEIGHT = None
+FIELD_WIDTH  = None
 
 config = configparser.ConfigParser()
 config.read('Data//config.ini')

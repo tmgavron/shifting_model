@@ -15,9 +15,9 @@ BLACK        = (0.00, 0.00, 0.00, 1.00) # Black
 TRANSPARENT  = (0.00, 0.00, 0.00, 0.00) # Transparent
 
 # Global Variable Declarations
-DISTANCE_TO_PLATE  =  60.5
-DISTANCE_TO_GRASS  =  95.0
-DISTANCE_TO_FENCE  = 339.5
+DISTANCE_TO_PLATE_  =  60.5
+DISTANCE_TO_GRASS_  =  95.0
+DISTANCE_TO_FENCE_  = 339.5
 image_scale_factor =   2
 cushion            =  10   # Extra space around the field to allow for thicker lines / outlines. Uniform on all sides.
 
@@ -64,9 +64,9 @@ def visualizeData(infieldPercentages, outfieldPercentages, filename):
 # Bottom right corner is (field_width, field_height)
 def initializeFieldVariables():
     global DISTANCE_TO_PLATE, DISTANCE_TO_GRASS, DISTANCE_TO_FENCE, PLATE, MOUND, FOULL, FOULR, OUTFIELD_ARC, INFIELD_ARC, FIELD_HEIGHT, FIELD_WIDTH
-    DISTANCE_TO_PLATE *= image_scale_factor
-    DISTANCE_TO_GRASS *= image_scale_factor
-    DISTANCE_TO_FENCE *= image_scale_factor
+    DISTANCE_TO_PLATE = DISTANCE_TO_PLATE_ * image_scale_factor
+    DISTANCE_TO_GRASS = DISTANCE_TO_GRASS_ * image_scale_factor
+    DISTANCE_TO_FENCE = DISTANCE_TO_FENCE_ * image_scale_factor
 
     foul_line_intercept = getIntersection((0, DISTANCE_TO_PLATE, DISTANCE_TO_FENCE), (0,0), math.radians(45))
     base_line_intercept = getIntersection((0, DISTANCE_TO_PLATE, DISTANCE_TO_GRASS), (0,0), math.radians(45))

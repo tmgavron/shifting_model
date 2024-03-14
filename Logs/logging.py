@@ -1,5 +1,15 @@
 from datetime import datetime
 import pandas as pd
+import os
+import openpyxl 
+from openpyxl import Workbook, load_workbook
+from openpyxl.drawing.image import Image
+import openpyxl.utils.dataframe as op    # Module needed for creating new workbook
+#from openpyxl import load_workbook   # Module needed for loading existing workbook
+import configparser
+
+config = configparser.ConfigParser()
+config.read('Data//config.ini')
 
 def writeLog(log, name="", descriptor=".txt"):
     now = datetime.now()
@@ -209,6 +219,124 @@ def printModel(modelType, model, train_stats, test_stats, data, params):
     print("Amount Incorrect: " + str(dftest["Correct"].value_counts()[False]))
 
 
+def writeToExcelSheet(logDF, name=""):
+    now = datetime.now()
+    dt_string = now.strftime("_%m-%Y")
+    filename = f"logs/ModelStatistics{dt_string}.xlsx"
+    exists = os.path.isfile(filename)
+    hbool = False
+    if not exists:
+        wb = Workbook()
+        ws=wb.active
+        ws.title=name
+        hbool = True
+        #with pd.ExcelWriter(filename, mode='w') as writer:
+        #    logDF.to_excel(writer, sheet_name=name)
+    else:
+        wb = load_workbook(filename)
+        if name not in wb.sheetnames:
+            hbool = True
+            wb.create_sheet(name)
+        ws = wb[name]
+
+    for row in op.dataframe_to_rows(logDF, index=False, header=hbool):
+        ws.append(row)
+    wb.save(filename)
+
+def writeToImageExcelSheet(picList, name=""):
+    now = datetime.now()
+    dt_string = now.strftime("_%m-%Y")
+    filename = f"logs/ModelStatistics{dt_string}.xlsx"
+    exists = os.path.isfile(filename)
+    hbool = False
+    if not exists:
+        wb = Workbook()
+        ws=wb.active
+        ws.title=name
+        hbool = True
+        #with pd.ExcelWriter(filename, mode='w') as writer:
+        #    logDF.to_excel(writer, sheet_name=name)
+    else:
+        wb = load_workbook(filename)
+        if name not in wb.sheetnames:
+            hbool = True
+            wb.create_sheet(name)
+        ws = wb[name]
+# Max could be 16 pics
+    wspots = ['A1','G1','M1','S1','A15','G15','M15','S15','A29','G29','M29','S29','A43','G43','M43','S43']
+    pspots = ['A2','G2','M2','S2','A16','G16','M16','S16','A30','G30','M30','S30','A44','G44','M44','S44']
+    for pic,wspot,pspot in zip(picList,wspots[:len(picList)],pspots[:len(picList)]):
+        picNameList = pic.split('_') 
+        # [0] is last name, [1] is first name, [2] is Pitch Type, [3] is Batter type
+        # Ex: 'Allsup_Chase_ChangeUp_LeftBatter.png'
+        picNameList[3] = picNameList[3].split('.')[0]
+        ws[wspot] = picNameList[2] + ' thrown to a ' + picNameList[3]
+        # create an image
+        img = Image("Visualization/"+pic)
+        img.width /= 3.5
+        img.height /= 3.5
+        # add to worksheet and anchor next to cells
+        ws.add_image(img, pspot)
+
+    wb.save(filename)
+
+def ExcelModel(modelType, model, train_stats, test_stats, data, params): #need to add what kind of training splits done?
+    # weights = [w for w in model.w]
+    
+    # log.append("Weights:")
+
+    # log += [",".join([str(w) for w in class_w]) for class_w in weights]
+    DFdic = params
+    DFdic.update({'Training Size':len(data[0]), 'Testing Size':len(data[2]), 'Training Accuracy':train_stats[1], 'Testing Accuracy':test_stats[1],
+                  'Training Average Error':train_stats[1], 'Testing Average Error':test_stats[1]})
+    for i,num in enumerate(train_stats[2]):
+        DFdic.update({("Training Recall : Section "+str(i)):num}) 
+    for i,num in enumerate(test_stats[2]):
+        DFdic.update({("Testing Recall : Section "+str(i)):num}) 
+    DFdic.update({'Training F1(micro)':train_stats[3][0], 'Training F1(macro)':train_stats[3][1], 'Training F1(weighted)':train_stats[3][2]})
+    DFdic.update({'Testing F1(micro)':test_stats[3][0], 'Testing F1(macro)':test_stats[3][1], 'Testing F1(weighted)':test_stats[3][2]})
+    DFdic.update({'Training AUC(macro)':train_stats[4][0], 'Training AUC(weighted)':train_stats[4][1]})
+    DFdic.update({'Testing AUC(macro)':test_stats[4][0], 'Testing AUC(weighted)':test_stats[4][1]})
+    
+    # Filtering for Statistics
+    
+    train_x = data[0]
+    train_y = data[1]
+    test_x = data[2]
+    test_y = data[3]
+    y_trainPred = data[4]
+    y_pred = data[5]
+
+    dftrain = train_x.copy()
+    dftrain["FieldSlicePrediction"] = y_trainPred #add to columns
+    dftrain["FieldSliceActual"] = train_y
+    dftrain = dftrain.assign(Correct = lambda x: (x["FieldSliceActual"] == x["FieldSlicePrediction"]))
+
+    dftest = test_x.copy()
+    dftest["FieldSlicePrediction"] = y_pred #add to columns
+    dftest["FieldSliceActual"] = test_y
+    dftest = dftest.assign(Correct = lambda x: (x["FieldSliceActual"] == x["FieldSlicePrediction"]))
+    dfall = pd.concat([dftrain, dftest])
+    dfTestStats = dftest.groupby(["FieldSliceActual"]).size().reset_index()
+    dfTestStats = dfTestStats.rename(columns={"FieldSliceActual":"Field Slice",0:"Count of Actual"})
+    dfTestStats["Count of Predicted"] = dftest.groupby(["FieldSlicePrediction"]).size().reset_index()[0]
+    dftemp = dftest[dftest["Correct"] == True]
+    dfTestStats["Correct"] = dftemp.groupby(["FieldSliceActual"]).size().reset_index()[0]
+
+    dfTrainStats = dftrain.groupby(["FieldSliceActual"]).size().reset_index()
+    dfTrainStats = dfTrainStats.rename(columns={"FieldSliceActual":"Field Slice",0:"Count of Actual"})
+    dfTrainStats["Count of Predicted"] = dftrain.groupby(["FieldSlicePrediction"]).size().reset_index()[0]
+    dftemp = dftrain[dftrain["Correct"] == True]
+    dfTrainStats["Correct"] = dftemp.groupby(["FieldSliceActual"]).size().reset_index()[0]
+    probs = model.predict_proba(test_x)
+    colprob = colsum(probs, len(probs[0]), len(probs))
+
+    for i,num in enumerate(colprob):
+        DFdic.update({("Section "+str(i)+" Probability"):num}) 
+
+    df = pd.DataFrame(data=DFdic, index=[0])
+    writeToExcelSheet(df,modelType)
+
 
 def colsum(arr, n, m):
     coll = [0,0,0,0,0]
@@ -218,3 +346,41 @@ def colsum(arr, n, m):
             su += arr[j][i]
         coll[i] = su/m
     return coll 
+
+def excelAverages(modelType, sColumns, sColumnsLetter):
+    # TODO
+    # This is meant to take all the values from the 30 runs and average them and output them to another sheet of averages for different models
+    # Then will need to do this for all the models
+    # Can take this and put it into an excelAverages function
+
+    now = datetime.now()
+    dt_string = now.strftime("_%m-%Y")
+    filename = f"logs/ModelStatistics{dt_string}.xlsx"
+    wb = openpyxl.load_workbook(filename)
+    #first_sheet = wb.get_sheet_names()[0]
+    worksheet = wb.get_sheet_by_name(modelType)
+    # These are the columns from the excel sheet that we want to average and put on Averages page
+    
+
+    # here you iterate over the rows in the specific column
+    # could also add the averages of just the certain permutation of hyperparams to see how its doing
+    # So an overall average and then
+    avgList = [0] * len(sColumns)
+    for row in range(2,worksheet.max_row+1): 
+        for i, column in enumerate(sColumnsLetter):  #Here you can add or reduce the columns
+            cell_name = "{}{}".format(column, row)
+            if str(type(worksheet[cell_name].value)) not in 'str':
+                #print(str(i) + ":" + str(worksheet[cell_name].value))
+                avgList[i] += worksheet[cell_name].value # the value of the specific cell
+
+    avgListEnd = [x/(worksheet.max_row-1) for x in avgList]
+    avgListEnd.insert(0, modelType)
+    sColumns.insert(0, 'Model Type')
+    # Still needs to export to the workbooks like everything else
+    if (config['LOGGING']['Debug'] == 'True'):
+        print("printing statistics...")
+        print(avgListEnd)
+    if (config['LOGGING']['Excel'] == 'True'):
+        print("exporting statistics to Excel...")
+        df = pd.DataFrame([avgListEnd], columns=sColumns)
+        writeToExcelSheet(df,"Average Statistics")

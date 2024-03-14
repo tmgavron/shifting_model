@@ -8,14 +8,15 @@ import configparser
 from ftplib import FTP
 from pathlib import Path
 from io import BytesIO
+import json
 
 config = configparser.ConfigParser()
 config.read('Data//config.ini')
 
 # All the values we believe will be most important to the model
 listOfCols = ["Pitcher", "PitcherId", "BatterId", "PitcherThrows", "BatterSide", "TaggedPitchType", "AutoPitchType", "PitchCall", "TaggedHitType", "PlayResult", 
-              "RelSpeed", "RelHeight", "RelSide", "VertRelAngle", "HorzRelAngle", "SpinRate", "SpinAxis", "InducedVertBreak", "VertBreak", "HorzBreak", "PlateLocHeight", "PlateLocSide",
-              "ZoneSpeed", "VertApprAngle", "HorzApprAngle", "ExitSpeed", "Angle", "HitSpinRate", "PositionAt110X", "PositionAt110Y",
+              "RelSpeed", "RelHeight", "RelSide", "VertRelAngle", "HorzRelAngle", "SpinRate", "SpinAxis", "InducedVertBreak", "VertBreak", "HorzBreak", "Extension", 
+              "PlateLocHeight", "PlateLocSide", "ZoneSpeed", "VertApprAngle", "HorzApprAngle", "ExitSpeed", "Angle", "HitSpinRate", "PositionAt110X", "PositionAt110Y",
               "PositionAt110Z", "Distance", "Direction", "Bearing", "HitLaunchConfidence", "HitLandingConfidence"]
 
 def getData():  
@@ -217,6 +218,7 @@ def getRawDataFrame(filename):
             raw_row.append(safe_float_conversion(row[indexDic["InducedVertBreak"]])) # InducedVertBreak
             raw_row.append(safe_float_conversion(row[indexDic["VertBreak"]])) # VertBreak
             raw_row.append(safe_float_conversion(row[indexDic["HorzBreak"]])) # HorzBreak
+            raw_row.append(safe_float_conversion(row[indexDic["Extension"]])) # Extension
             raw_row.append(safe_float_conversion(row[indexDic["PlateLocHeight"]])) # PlateLocHeight
             raw_row.append(safe_float_conversion(row[indexDic["PlateLocSide"]])) # PlateLocSide
             raw_row.append(safe_float_conversion(row[indexDic["ZoneSpeed"]])) # ZoneSpeed
@@ -322,6 +324,10 @@ def infieldFilter(df):
         # print(df)
         # print("--")
         
+        specific_columns = json.loads(config.get('TRAIN','InfieldOverallFilter'))
+        df = df.dropna(axis=0, how='any',subset=specific_columns)
+        df = df[specific_columns]
+
         return df
     
 #     # This function filters the given Pandas DataFrame specifically for infield data fields for pitcher averages. These fields are used just for initial testing and
@@ -382,6 +388,11 @@ def outfieldFilter(df):
         labels = [1,2,3,4,5]
         df['FieldSlice'] = pd.cut(df['Bearing'], bins=bins, labels=labels)
         # df = df[df["HitLandingConfidence"].isin(["Medium","High"])]
+
+        specific_columns = json.loads(config.get('TRAIN','OutfieldOverallFilter'))
+        df = df.dropna(axis=0, how='any',subset=specific_columns)
+        df = df[specific_columns]
+
         return df
 
 

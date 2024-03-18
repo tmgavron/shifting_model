@@ -47,17 +47,17 @@ def visualizeData(infieldPercentages, outfieldPercentages, filename):
         fillSlices(draw, infield_slices,  infieldPercentages,  DISTANCE_TO_FENCE, OUTFIELD_ARC,  ORANGE_LIGHT, ORANGE_DARK)
         drawOnlyInfield(draw, infield_slices)
 
-    surface.write_to_png('Visualization/' + filename + '.png')
+    surface.write_to_png('Output/' + filename + '.png')
 
     # Write text on top of the image
-    image = Image.open('Visualization/' + filename + '.png')
+    image = Image.open('Output/' + filename + '.png')
     if(config['VISUAL']['RenderOutfield']=='True'):
         image = addPercents(image, infield_slices,  infieldPercentages,  DISTANCE_TO_GRASS)
         image = addPercents(image, outfield_slices, outfieldPercentages, DISTANCE_TO_FENCE)
     else:
         image = addPercents(image, infield_slices,  infieldPercentages,  DISTANCE_TO_FENCE)
 
-    image.save('Visualization/' + filename + '.png')
+    image.save('Output/' + filename + '.png')
 
 
 # Top left corner is (0,0)

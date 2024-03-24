@@ -287,7 +287,7 @@ def ExcelModel(modelType, model, train_stats, test_stats, data, params): #need t
 
     # log += [",".join([str(w) for w in class_w]) for class_w in weights]
     DFdic = params
-    DFdic.update({'Training Size':len(data[0]), 'Testing Size':len(data[2]), 'Training Accuracy':train_stats[1], 'Testing Accuracy':test_stats[1],
+    DFdic.update({'Training Size':len(data[0]), 'Testing Size':len(data[2]), 'Training Accuracy':train_stats[0], 'Testing Accuracy':test_stats[0],
                   'Training Average Error':train_stats[1], 'Testing Average Error':test_stats[1]})
     for i,num in enumerate(train_stats[2]):
         DFdic.update({("Training Recall : Section "+str(i)):num}) 

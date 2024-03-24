@@ -14,6 +14,11 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import GridSearchCV
 import configparser
 from Logs import logging as logs
+from Data import DataUtil
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import KFold
+from sklearn.model_selection import LeaveOneOut
+import json
 
 config = configparser.ConfigParser()
 config.read('Data//config.ini')
@@ -122,6 +127,11 @@ def runDT(train_x, train_y, test_x, test_y, max_depth, max_features, max_leaf_no
         print("printing statistics...")
         logs.printModel("DecisionTree", dt, trainStats, testStats, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
                     ["Max Tree Depth: ", max_depth, "Max Tree Features: ", max_features, "Max Leaf Nodes: ", max_leaf_nodes])
+    if (config['LOGGING']['Excel'] == 'True'):
+        print("exporting statistics to Excel...")
+        logs.ExcelModel("DecisionTree", dt, trainStats, testStats, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+                    {'Max Tree Depth':max_depth, 'Max Tree Features':max_features, 'Max Leaf Nodes':max_leaf_nodes,
+                     'Tree Depth':dt.get_depth(), 'Tree Features': dt.n_features_in_, 'Leaf Nodes': dt.get_n_leaves()})
     
     print("done!")
 
@@ -157,7 +167,6 @@ def runNB(train_x, train_y, test_x, test_y, var_smoothing):
     y_pred = nb.predict(test_x)
     y_predProb = nb.predict_proba(test_x)
     testStats = get_infield_statistics(test_y, y_pred, y_predProb)
-
     
     if (config['LOGGING']['Logs'] == 'True'):
         print("logging statistics...")
@@ -167,6 +176,9 @@ def runNB(train_x, train_y, test_x, test_y, var_smoothing):
         print("printing statistics...")
         logs.printModel("NaiveBayes", nb, trainStats, testStats, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
                    ["Var Smoothing: ", var_smoothing])
+    if (config['LOGGING']['Excel'] == 'True'):
+        print("exporting statistics to Excel...")
+        logs.ExcelModel("NaiveBayes", nb, trainStats, testStats, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],{'Var Smoothing':var_smoothing})
     
     print("done!")
 
@@ -212,6 +224,9 @@ def runLogReg(train_x, train_y, test_x, test_y, lr, e):
         print("printing statistics...")
         logs.printModel("LogisticRegression", logreg, trainStats, testStats, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
                     ["Learning Rate: ", lr, "Epochs: ", e])
+    if (config['LOGGING']['Excel'] == 'True'):
+        print("exporting statistics to Excel...")
+        logs.ExcelModel("LogisticRegression", logreg, trainStats, testStats, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],{"Learning Rate": lr, "Epochs": e})
     
     print("done!")
 
@@ -261,6 +276,23 @@ def runSVM(train_x, train_y, test_x, test_y, rC, kernel, degree, gamma, coef0):
         print("printing statistics...")
         logs.printModel("SVM", svm, trainStats, testStats, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
                     ["Regularization Constant: ", rC, "Kernel Type: ", kernel, "Kernel Degree", degree, "Kernel Coefficient (gamma): ", gamma, "Independent Term in Kernel (coef0): ", coef0])
+    if (config['LOGGING']['Excel'] == 'True'):
+        print("exporting statistics to Excel...")
+        # this because there is an error with the AUC calculations for SVM Models
+        trainStat = []
+        trainStat.append(trainStats[0])
+        trainStat.append(trainStats[1])
+        trainStat.append(trainStats[2])
+        trainStat.append(trainStats[3])
+        trainStat.append([0,0])
+        testStat = []
+        testStat.append(testStats[0])
+        testStat.append(testStats[1])
+        testStat.append(testStats[2])
+        testStat.append(testStats[3])
+        testStat.append([0,0])
+        logs.ExcelModel("SVM", svm, trainStat, testStat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
+                        {"Regularization Constant":rC,"Kernel Type":kernel,"Kernel Degree":degree,"Kernel Coefficient (gamma)":gamma,"Independent Term in Kernel (coef0)":coef0})
 
     print("done!")
 
@@ -506,4 +538,67 @@ def get_infield_statistics(pred, y_test, probs):
     except:
         auc = "Error"
     return accuracy, averageError, recall, f1, auc
+
+# will split the data given from the DataFram dF and also compute stats on the splits
+# This allows it to be run multiple times
+def modelDataSplitting(dF, randomState, testSize, dFType):
+
+    if("False" in config['DATA']['USE_NEW_PREPROCESSING']):
+        Y = dF["FieldSlice"]
+        X = dF[json.loads(config.get('TRAIN',dFType))]
+        #X = dF[specific_columns] # pitcher averages
+        originalNotNormX = X
+        X = DataUtil.normalizeData(X, originalNotNormX)
+        xTrain, xTest, yTrain, yTest = train_test_split(X, Y, test_size=testSize, random_state=randomState)
+        # adb = AdaBoostClassifier()
+        # adb_model = adb.fit(xTrain, yTrain)
+
+        # calculate split information:
+        trainingClassSplit = [0, 0, 0, 0, 0]
+        for i in yTrain:
+            trainingClassSplit[i-1] += 1
+
+        
+        testingClassSplit = [0, 0, 0, 0, 0]
+        for i in yTest:
+            testingClassSplit[i-1] += 1
+
+        trainingClassPercent = []
+        for i in trainingClassSplit:
+            trainingClassPercent.append(round(i/len(yTrain), 4))
+
+        testingClassPercent = []
+        for i in testingClassSplit:
+            testingClassPercent.append(round(i/len(yTest), 4))
+
+        if (config['LOGGING']['Debug'] == 'True'):
+            print("Training Class Splits (count, then percentage):")
+            print(trainingClassSplit)
+            print(trainingClassPercent)
+            print("\nTesting Class Splits (count, then percentage):")
+            print(testingClassSplit)
+            print(testingClassPercent)
+    else:
+        infieldY = dF[0][['Direction','Distance']]
+        infieldX = dF[0][dF[1]] 
+        if("True" in config['SPLIT']['TTS']):
+            xTrain, xTest, yTrain, yTest = train_test_split(infieldX, infieldY, test_size=0.20, random_state=11)
+            
+        elif("True" in config['SPLIT']['KFold']):
+            kf = KFold(n_splits=5, shuffle=True, random_state=11)
+            for train_index, test_index in kf.split(infieldX):
+                xTrain, xTest = infieldX.iloc[train_index,:], infieldX.iloc[test_index,:]
+                yTrain, yTest = infieldY.iloc[train_index,:], infieldY.iloc[test_index,:]
+
+        elif("True" in config['SPLIT']['LOOCV']):
+            loo = LeaveOneOut()
+            for train_index, test_index in loo.split(infieldX):
+                xTrain, xTest = infieldX.iloc[train_index,:], infieldX.iloc[test_index,:]
+                yTrain, yTest = infieldY.iloc[train_index,:], infieldY.iloc[test_index,:]
+
+        else:
+            print("No Splitting Method Selected")
+            
+    return xTrain, xTest, yTrain, yTest
+    # GroupKFold: (avoids putting data from the same group in the test set -- useful for Pitcher/Batter ID when we implement that.)
 

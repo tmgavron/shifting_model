@@ -15,58 +15,60 @@ BLACK        = (0.00, 0.00, 0.00, 1.00) # Black
 TRANSPARENT  = (0.00, 0.00, 0.00, 0.00) # Transparent
 
 # Global Variable Declarations
-DISTANCE_TO_PLATE  =  60.5
-DISTANCE_TO_GRASS  =  95.0
-DISTANCE_TO_FENCE  = 339.5
+DISTANCE_TO_PLATE_  =  60.5
+DISTANCE_TO_GRASS_  =  95.0
+DISTANCE_TO_FENCE_  = 339.5
 image_scale_factor =   2
 cushion            =  10   # Extra space around the field to allow for thicker lines / outlines. Uniform on all sides.
-PLATE = None
-MOUND = None
-FOULL = None
-FOULR = None
-ANGLE = None
-FIELD_HEIGHT = None
-FIELD_WIDTH  = None
 
 config = configparser.ConfigParser()
 config.read('Data//config.ini')
 
 # Creates an image of a baseball field with slices colored based on the odds of being hit into. Also displays the percent chance on each slice.
-
-# Eventually:
-# int(config['VISUAL']['InfieldSlices'])
-# int(config['VISUAL']['OutfieldSlices'])
-def visualizeData(infieldPercentages, outfieldPercentages):
+def visualizeData(infieldStats, outfieldStats, filename):
     initializeFieldVariables()
-    infield_slices  = infieldPercentages.__len__()
-    outfield_slices = outfieldPercentages.__len__()
+    infield_slices  = infieldStats.__len__()
+    outfield_slices = outfieldStats.__len__()
 
     # Create the field image
     surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, FIELD_WIDTH, FIELD_HEIGHT)
     draw = cairo.Context(surface)
 
-    # Draw the slices
-    fillOutfieldSlices(draw, outfield_slices, outfieldPercentages)
-    fillInfieldSlices(draw, infield_slices, infieldPercentages)
-    # Draw the field on top
-    drawField(draw, infield_slices, outfield_slices)
+    # Draw the slices & layer field lines on top
+    if(config['VISUAL']['RenderOutfield']=='True'):
+        if(config['VISUAL']['Heatmap']=='True'):
+            doHeatmap(draw, outfieldStats, NAVY_LIGHT, NAVY_DARK)
+            fillSlices(draw, infield_slices,  infieldStats,  DISTANCE_TO_GRASS, INFIELD_ARC,  ORANGE_LIGHT, ORANGE_DARK)
+            drawField(draw, infield_slices, 0)
+        else:
+            fillSlices(draw, outfield_slices, outfieldStats, DISTANCE_TO_FENCE, OUTFIELD_ARC, NAVY_LIGHT,   NAVY_DARK)
+            fillSlices(draw, infield_slices,  infieldStats,  DISTANCE_TO_GRASS, INFIELD_ARC,  ORANGE_LIGHT, ORANGE_DARK)
+            drawField(draw, infield_slices, outfield_slices)
+    else:
+        fillSlices(draw, infield_slices,  infieldStats,  DISTANCE_TO_FENCE, OUTFIELD_ARC,  ORANGE_LIGHT, ORANGE_DARK)
+        drawOnlyInfield(draw, infield_slices)
 
-    surface.write_to_png('Visualization/FieldTest.png')
+    surface.write_to_png('Output/' + filename + '.png')
 
     # Write text on top of the image
-    image = Image.open('Visualization/FieldTest.png')
-    image = addInfieldPercents(image, infield_slices, infieldPercentages)
-    image = addOutfieldPercents(image, outfield_slices, outfieldPercentages)
-    image.show()
+    image = Image.open('Output/' + filename + '.png')
+    if(config['VISUAL']['RenderOutfield']=='True'):
+        image = addPercents(image, infield_slices,  infieldStats,  DISTANCE_TO_GRASS)
+        if(config['VISUAL']['Heatmap']=='False'):
+            image = addPercents(image, outfield_slices, outfieldStats, DISTANCE_TO_FENCE)
+    else:
+        image = addPercents(image, infield_slices,  infieldStats,  DISTANCE_TO_FENCE)
+
+    image.save('Output/' + filename + '.png')
 
 
 # Top left corner is (0,0)
 # Bottom right corner is (field_width, field_height)
 def initializeFieldVariables():
     global DISTANCE_TO_PLATE, DISTANCE_TO_GRASS, DISTANCE_TO_FENCE, PLATE, MOUND, FOULL, FOULR, OUTFIELD_ARC, INFIELD_ARC, FIELD_HEIGHT, FIELD_WIDTH
-    DISTANCE_TO_PLATE *= image_scale_factor
-    DISTANCE_TO_GRASS *= image_scale_factor
-    DISTANCE_TO_FENCE *= image_scale_factor
+    DISTANCE_TO_PLATE = DISTANCE_TO_PLATE_ * image_scale_factor
+    DISTANCE_TO_GRASS = DISTANCE_TO_GRASS_ * image_scale_factor
+    DISTANCE_TO_FENCE = DISTANCE_TO_FENCE_ * image_scale_factor
 
     foul_line_intercept = getIntersection((0, DISTANCE_TO_PLATE, DISTANCE_TO_FENCE), (0,0), math.radians(45))
     base_line_intercept = getIntersection((0, DISTANCE_TO_PLATE, DISTANCE_TO_GRASS), (0,0), math.radians(45))
@@ -84,13 +86,21 @@ def initializeFieldVariables():
 
 def drawField(draw, infield, outfield):
     drawFieldLines(draw, 12, WHITE)
-    drawFieldSplit(draw, 12, WHITE)
     drawInfieldSliceLines (draw, 12, WHITE, infield)
     drawOutfieldSliceLines(draw, 12, WHITE, outfield)
-    drawFieldLines(draw,  6, BLACK)
+    drawFieldSplit(draw, 12, WHITE)
     drawFieldSplit(draw,  6, BLACK)
+    drawFieldLines(draw,  6, BLACK)
     drawInfieldSliceLines (draw,  6, BLACK, infield)
     drawOutfieldSliceLines(draw,  6, BLACK, outfield)
+
+def drawOnlyInfield(draw, infield):
+    drawFieldLines(draw, 12, WHITE)
+    drawInfieldSliceLines (draw, 12, WHITE, infield)
+    drawOutfieldSliceLines(draw, 12, WHITE, infield)
+    drawFieldLines(draw,  6, BLACK)
+    drawInfieldSliceLines (draw,  6, BLACK, infield)
+    drawOutfieldSliceLines(draw,  6, BLACK, infield)
 
 def drawFieldLines(draw, thick, color):
     draw.move_to(PLATE[0], PLATE[1])
@@ -107,12 +117,16 @@ def drawFieldSplit(draw, thick, color):
     draw.stroke()
 
 def drawInfieldSliceLines(draw, thick, color, slices):
+    if(slices == 0):
+        return
     for i in range(1, slices):
         start = (PLATE[0], PLATE[1])
         end   = flip_y(getIntersection(flip_y((MOUND[0], MOUND[1], DISTANCE_TO_GRASS)), flip_y((PLATE[0], PLATE[1])), math.radians(45 + (i * 90 / slices))))
         drawSliceLine(draw, start, end, thick, color)
 
 def drawOutfieldSliceLines(draw, thick, color, slices):
+    if(slices == 0):
+        return
     for i in range(1, slices):
         start  = flip_y(getIntersection(flip_y((MOUND[0], MOUND[1], DISTANCE_TO_GRASS)), flip_y((PLATE[0], PLATE[1])), math.radians(45 + (i * 90 / slices))))
         end    = flip_y(getIntersection(flip_y((MOUND[0], MOUND[1], DISTANCE_TO_FENCE)), flip_y((PLATE[0], PLATE[1])), math.radians(45 + (i * 90 / slices))))
@@ -125,25 +139,17 @@ def drawSliceLine(draw, start, end, thick, color):
     draw.set_source_rgba(color[0], color[1], color[2], color[3])
     draw.stroke()
 
-def fillInfieldSlices(draw, slices, percentages):
+def fillSlices(draw, slices, percentages, arc_distance, arc_angle, color1, color2):
+    if(slices == 0):
+        return
     maxOdds = max(percentages)
-    angle_to = -math.pi/2 - INFIELD_ARC
-    angle_diff = 2 * INFIELD_ARC / slices
+    angle_to = -math.pi/2 - arc_angle
+    angle_diff = 2 * arc_angle / slices
     for i in range(0, slices):
         angle_from = angle_to
         angle_to += angle_diff
-        sliceColor = blendColors(ORANGE_LIGHT, ORANGE_DARK, percentages[i]/maxOdds)
-        drawFilledSlice(draw, angle_from, angle_to, sliceColor, DISTANCE_TO_GRASS)
-
-def fillOutfieldSlices(draw, slices, percentages):
-    maxOdds = max(percentages)
-    angle_to = -math.pi/2 - OUTFIELD_ARC
-    angle_diff = 2 * OUTFIELD_ARC / slices
-    for i in range(0, slices):
-        angle_from = angle_to
-        angle_to += angle_diff
-        sliceColor = blendColors(NAVY_LIGHT, NAVY_DARK, percentages[i]/maxOdds)
-        drawFilledSlice(draw, angle_from, angle_to, sliceColor, DISTANCE_TO_FENCE)
+        sliceColor = blendColors(color1, color2, percentages[i]/maxOdds)
+        drawFilledSlice(draw, angle_from, angle_to, sliceColor, arc_distance)
     
 def drawFilledSlice(draw, angle_from, angle_to, color, radius):
     draw.move_to(PLATE[0], PLATE[1])
@@ -157,16 +163,23 @@ def drawText(image, text, position):
     draw = ImageDraw.Draw(image)
     draw.text((position[0], position[1]), text, font=useFont, fill=color10to255(BLACK), align="center", anchor="mm", stroke_width=3, stroke_fill=color10to255(WHITE))
 
-def addInfieldPercents(image, slices, infield):
-    for i in range(0, slices):
-        pos = flip_xy(getIntersection(flip_y((MOUND[0], MOUND[1], DISTANCE_TO_GRASS * 0.75)), flip_y((PLATE[0], PLATE[1])), math.radians(45 + ((i+0.5) * 90 / slices))))
-        drawText(image, cleanNumber(infield[i]), pos)
-    return image
+def doHeatmap(draw, stats, color1, color2):
+    drawFilledSlice(draw, -math.pi/2 - OUTFIELD_ARC, -math.pi/2 + OUTFIELD_ARC, color1, DISTANCE_TO_FENCE)
+    for i in range(0, stats.__len__()):
+        drawPoint(draw, stats[i][0], stats[i][1], color2)
 
-def addOutfieldPercents(image, slices, outfield):
+def drawPoint(draw, bearing, distance, color):
+    pos = getIntersection((PLATE[0], PLATE[1], distance*image_scale_factor), (PLATE[0], PLATE[1]), math.radians(-90 + bearing))
+    #print('Angle: ' + str(math.degrees(bearing)) + '\nDistance: ' + str(distance) + '\nX: ' + str(pos[0]) + '\nY: ' + str(pos[1]) + '\n')
+    draw.move_to(pos[0], pos[1])
+    draw.arc(pos[0], pos[1], 5, 0, 2*math.pi)
+    draw.set_source_rgba(color[0], color[1], color[2], color[3])
+    draw.fill()
+
+def addPercents(image, slices, percentages, arc_distance):
     for i in range(0, slices):
-        pos = flip_xy(getIntersection(flip_y((MOUND[0], MOUND[1], DISTANCE_TO_FENCE * 0.75)), flip_y((PLATE[0], PLATE[1])), math.radians(45 + ((i+0.5) * 90 / slices))))
-        drawText(image, cleanNumber(outfield[i]), pos)
+        pos = flip_xy(getIntersection(flip_y((MOUND[0], MOUND[1], arc_distance * 0.75)), flip_y((PLATE[0], PLATE[1])), math.radians(45 + ((i+0.5) * 90 / slices))))
+        drawText(image, cleanNumber(percentages[i]), pos)
     return image
 
 # Blends two RGBA colors together based on a ratio (0..1)

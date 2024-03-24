@@ -8,14 +8,15 @@ import configparser
 from ftplib import FTP
 from pathlib import Path
 from io import BytesIO
+import json
 
 config = configparser.ConfigParser()
 config.read('Data//config.ini')
 
 # All the values we believe will be most important to the model
-listOfCols = ["PitcherId", "BatterId", "PitcherThrows", "BatterSide", "TaggedPitchType", "AutoPitchType", "PitchCall", "TaggedHitType", "PlayResult", 
-              "RelSpeed", "RelHeight", "RelSide", "VertRelAngle", "HorzRelAngle", "SpinRate", "SpinAxis", "InducedVertBreak", "VertBreak", "HorzBreak", "PlateLocHeight", "PlateLocSide",
-              "ZoneSpeed", "VertApprAngle", "HorzApprAngle", "ExitSpeed", "Angle", "HitSpinRate", "PositionAt110X", "PositionAt110Y",
+listOfCols = ["Pitcher", "PitcherId", "BatterId", "PitcherThrows", "BatterSide", "TaggedPitchType", "AutoPitchType", "PitchCall", "TaggedHitType", "PlayResult", 
+              "RelSpeed", "RelHeight", "RelSide", "VertRelAngle", "HorzRelAngle", "SpinRate", "SpinAxis", "InducedVertBreak", "VertBreak", "HorzBreak", "Extension", 
+              "PlateLocHeight", "PlateLocSide", "ZoneSpeed", "VertApprAngle", "HorzApprAngle", "ExitSpeed", "Angle", "HitSpinRate", "PositionAt110X", "PositionAt110Y",
               "PositionAt110Z", "Distance", "Direction", "Bearing", "HitLaunchConfidence", "HitLandingConfidence"]
 
 def getData():  
@@ -190,9 +191,11 @@ def getRawDataFrame(filename):
             indexDic[colName] = find_column_index(filename, colName)
 
         for row in csv_reader:
+            # This is so that if the index is -1 (column does not exist), the value will be nan
+            row.append(np.nan)
             raw_row = list()
             # ID's:
-            #raw_row.append(str(row[indexDic["PitchNo"]])) # PitchNo
+            raw_row.append(str(row[indexDic["Pitcher"]])) # Pitcher
             #raw_row.append(str(row[indexDic["PitchUID"]])) # PitchUID
             raw_row.append(str(row[indexDic["PitcherId"]])) # PitcherId
             raw_row.append(str(row[indexDic["BatterId"]])) # BatterId
@@ -215,6 +218,7 @@ def getRawDataFrame(filename):
             raw_row.append(safe_float_conversion(row[indexDic["InducedVertBreak"]])) # InducedVertBreak
             raw_row.append(safe_float_conversion(row[indexDic["VertBreak"]])) # VertBreak
             raw_row.append(safe_float_conversion(row[indexDic["HorzBreak"]])) # HorzBreak
+            raw_row.append(safe_float_conversion(row[indexDic["Extension"]])) # Extension
             raw_row.append(safe_float_conversion(row[indexDic["PlateLocHeight"]])) # PlateLocHeight
             raw_row.append(safe_float_conversion(row[indexDic["PlateLocSide"]])) # PlateLocSide
             raw_row.append(safe_float_conversion(row[indexDic["ZoneSpeed"]])) # ZoneSpeed
@@ -240,7 +244,7 @@ def getRawDataFrame(filename):
 
     # Create dataframe
     raw_dataframe = pd.DataFrame(raw_data, columns=listOfCols)
-    raw_dataframe.dropna(axis=0, how='any')        
+    # raw_dataframe.dropna(axis=0, how='any')        
     return raw_dataframe
 
 def trimData(df):
@@ -271,8 +275,8 @@ def expungeData(df):
     return df
 
 # This function uses a custom normalization method (saturation) to normalize the data in the given DataFrame.
-def normalizeData(df):
-    normal_df = (df-df.min())/(df.max()-df.min())
+def normalizeData(df, normalizeOn):
+    normal_df = (df-normalizeOn.min())/(normalizeOn.max()-normalizeOn.min())
     return normal_df
 
 # This function filters the given Pandas DataFrame specifically for infield data fields. These fields are used just for initial testing and
@@ -320,7 +324,38 @@ def infieldFilter(df):
         # print(df)
         # print("--")
         
+        specific_columns = json.loads(config.get('TRAIN','InfieldOverallFilter'))
+        df = df.dropna(axis=0, how='any',subset=specific_columns)
+        df = df[specific_columns]
+
         return df
+    
+#     # This function filters the given Pandas DataFrame specifically for infield data fields for pitcher averages. These fields are used just for initial testing and
+# #   training of the Models
+# # Inputs:
+#     # df: the fieldDataFrame
+# # Output: the filtered DataFrame
+# def infieldFilterForAverages(df):
+#     # ----- PREVIOUS FILTERING -----
+#     # df = df[df["PitcherThrows"].isin(["Left", "Right", "Both"])] # 1, 2, 3 (can remove Both)
+#     # df["PitcherThrows"] = df["PitcherThrows"].map({"Left":1, "Right":2, "Both":3})
+#     # df = df[df["BatterSide"].isin(["Left","Right"])] # 1, 2
+#     # df["BatterSide"] = df["BatterSide"].map({"Left":1, "Right":2})
+#     df = df[df["TaggedPitchType"].isin(["Fastball", "Sinker", "Cutter", "Curveball", "Slider", "Changeup", "Splitter", "Knuckleball"])] # 1,2,3,4,5,6,7,8
+#     df["TaggedPitchType"] = df["TaggedPitchType"].map({"Fastball":1, "Sinker":2, "Cutter":3, "Curveball":4, "Slider":5, "Changeup":6, "Splitter":7, "Knuckleball":8})
+#     # df = df[df["PitchCall"].str.contains("InPlay")]
+#     # df = df[df["TaggedHitType"].str.contains("GroundBall")]
+#     # df = df[df["Direction"].between(-45, 45)]
+#     # bins = [-45, -27, -9, 9, 27, 45]
+#     # labels = [1,2,3,4,5]
+#     # df["FieldSlice"] = pd.cut(df["Direction"], bins=bins, labels=labels)
+#     # df = df[df["HitLaunchConfidence"].isin(["Medium","High"])]
+#     # print("--")
+#     # print(df)
+#     # print("--")
+    
+#     return df
+
 
 # This function filters the given Pandas DataFrame specifically for outfield data fields. These fields are used just for initial testing and
 #   training of the Models
@@ -353,6 +388,11 @@ def outfieldFilter(df):
         labels = [1,2,3,4,5]
         df['FieldSlice'] = pd.cut(df['Bearing'], bins=bins, labels=labels)
         # df = df[df["HitLandingConfidence"].isin(["Medium","High"])]
+
+        specific_columns = json.loads(config.get('TRAIN','OutfieldOverallFilter'))
+        df = df.dropna(axis=0, how='any',subset=specific_columns)
+        df = df[specific_columns]
+
         return df
 
 

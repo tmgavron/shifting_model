@@ -32,7 +32,7 @@ def insert_image(sheet, image_path, cell):
 
 
 # Function to process each image file
-def process_image(workbook, filename):
+def process_image(workbook, filename, folder_path):
     parts = filename.split('_')
     if len(parts) != 4:
         print(f"Invalid filename format: {filename}")
@@ -105,25 +105,31 @@ def process_image(workbook, filename):
 
 
 # Main program starts here
-folder_path = 'C:/Users/Trent/Desktop/Senior Design/shifting_model/Visualization'  # Change this to the path of your images folder
-excel_path = 'Pitcher_Averages.xlsx'  # Change this to your Excel file path, it can be new or existing
+def create_excel():
+    # Path to the target directory
+    folder_path = os.path.abspath(os.path.join(os.curdir, 'Output'))
+    print("Looking in:", folder_path)
 
-# Load or create the workbook
-if os.path.exists(excel_path):
-    wb = load_workbook(excel_path)
-else:
-    wb = Workbook()
+    # folder_path = 'C:\Users\Trent\Desktop\Senior Design\shifting_model\Output'  # Change this to the path of your images folder
+    excel_path = 'Pitcher_Averages.xlsx'  # Change this to your Excel file path, it can be new or existing
 
-# Process each image in the folder
-for filename in os.listdir(folder_path):
-    if filename.endswith(('.png', '.jpg', '.jpeg')):  # Add more file types if needed
-        process_image(wb, filename)
+    # Load or create the workbook
+    if os.path.exists(excel_path):
+        os.remove(excel_path)
+        wb = Workbook()
+    else:
+        wb = Workbook()
 
-# Save the workbook
-default_sheet_name = wb.sheetnames[0]  # Get the name of the first sheet
-if default_sheet_name == 'Sheet':  # Change 'Sheet' to your default sheet name if different
-    default_sheet = wb[default_sheet_name]
-    wb.remove(default_sheet)
+    # Process each image in the folder
+    for filename in os.listdir(folder_path):
+        if filename.endswith(('.png', '.jpg', '.jpeg')):  # Add more file types if needed
+            process_image(wb, filename, folder_path)
 
-wb.save(excel_path)
-print(f"Workbook saved at {excel_path}")
+    # Save the workbook
+    default_sheet_name = wb.sheetnames[0]  # Get the name of the first sheet
+    if default_sheet_name == 'Sheet':  # Change 'Sheet' to your default sheet name if different
+        default_sheet = wb[default_sheet_name]
+        wb.remove(default_sheet)
+
+    wb.save(excel_path)
+    print(f"Workbook saved at {excel_path}")

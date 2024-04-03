@@ -18,24 +18,24 @@ importlib.reload(VisualUtil)
 importlib.reload(batch_image_to_excel)
 importlib.reload(logs)
 
-import pandas as pd
-from sklearn.preprocessing import MinMaxScaler
-
 import warnings
 warnings.filterwarnings("ignore")
 
+infieldDataFrame = []
+outfieldDataFrame = []
+models = []
+
 def loadData():
     # 1) Load all data from preprocessing 
-    importlib.reload(Preprocessing)
     newprocessing = 'True' in config['DATA']['USE_NEW_PREPROCESSING']
     infieldDataFrame, outfieldDataFrame = Preprocessing.dataFiltering([], newprocessing)
-    
-    return infieldDataFrame, outfieldDataFrame
+
 
 # Function to train all models based on settings from config
 def trainModels():
-    importlib.reload(logs)
-    loadData()
+    if (infieldDataFrame == []):
+        loadData() # Need to do this so we can normalize
+    models = {}
     # 2) Trains all Models and exports all data to an Excel Sheet
     max_depth = 50
     max_features = 30
@@ -58,24 +58,28 @@ def trainModels():
             xTrain, xTest, yTrain, yTest = ModelUtil.modelDataSplitting(infieldDataFrame, j, 0.25,'InfieldTrainingFilter')
             if("True" in config['MODELS']['DTC']):
                 dtOutput = ModelUtil.runDT(xTrain, yTrain, xTest, yTest, max_depth, max_features, max_leaf_nodes)
+                models["DT"] = dtOutput
                 if ("True" in config['DATA']['Pickle']):
                     # Save the model to a file
                     with open('Models/DecisionTree.pkl', 'wb') as file:
                         pickle.dump(dtOutput, file)
             if("True" in config['MODELS']['NB']):   
                 nbOutput = ModelUtil.runNB(xTrain, yTrain, xTest, yTest, var_smoothing)
+                models["NB"] = nbOutput
                 if ("True" in config['DATA']['Pickle']):
                     # Save the model to a file
                     with open('Models/NaiveBayes.pkl', 'wb') as file:
                         pickle.dump(nbOutput, file)
             if("True" in config['MODELS']['LR']):
                 logRegOutput = ModelUtil.runLogReg(xTrain, yTrain, xTest, yTest, lr, e)
+                models["LR"] = logRegOutput
                 if ("True" in config['DATA']['Pickle']):
                     # Save the model to a file
                     with open('Models/LogRegression.pkl', 'wb') as file:
                         pickle.dump(logRegOutput, file)
             if("True" in config['MODELS']['SVM']):
                 svmOutput = ModelUtil.runSVM(xTrain, yTrain, xTest, yTest, rC, kernel, degree, gamma, coef0)
+                models["SVM"] = svmOutput
                 if ("True" in config['DATA']['Pickle']):
                     # Save the model to a file
                     with open('Models/SVM.pkl', 'wb') as file:
@@ -83,6 +87,7 @@ def trainModels():
             # if("True" in config['MODELS']['RF']):
             #     for i in range(0, len(trainIn)):
             #         direction, distance = ModelUtil.runRFR(trainIn[i], trainOut[i], testIn[i], testOut[i])
+    
 
 # Function to load models from their pickle files
 def loadModels():
@@ -109,14 +114,10 @@ def loadModels():
 
 # Function to output all average pitcher photos from 'Data/PitchMetricAverages_AsOf_2024-03-11.csv'
 def outputPitcherAverages():
-    # Average Pitcher Data Processing and Running
-    importlib.reload(Preprocessing)
-    importlib.reload(DataUtil)
-    importlib.reload(VisualUtil)
-    importlib.reload(batch_image_to_excel)
-
-    models = loadModels()
-    infieldDataFrame, outfieldDataFrame = loadData() # Need to do this so we can normalize
+    if (models == []):
+        models = loadModels()
+    if (infieldDataFrame == []):
+        loadData() # Need to do this so we can normalize
 
     pitchingAveragesDF = DataUtil.getRawDataFrame('Data/PitchMetricAverages_AsOf_2024-03-11.csv')
     # drop nan values from the used columns
@@ -152,4 +153,9 @@ def outputPitcherAverages():
 
     batch_image_to_excel.create_excel()
 
-outputPitcherAverages()
+
+
+# Run this every monday:
+loadData() # replace CSV data with all current data in weekly load
+trainModels() # re-train models on new data (based on config)
+outputPitcherAverages() # change this to output predictions to the sql database to be read in and visualized when opening that players page

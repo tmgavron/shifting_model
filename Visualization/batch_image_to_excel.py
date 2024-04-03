@@ -55,7 +55,7 @@ def process_image(workbook, filename, folder_path):
     else:
         sheet = workbook.create_sheet(sheet_name)
         # Set the pitch headers and "Left" and "Right" labels
-        pitches = ['FASTBALL', 'FOURSEAMFASTBALL', 'TWOSEAMFASTBALL', 'SINKER', 'CHANGEUP',
+        pitches = ['FASTBALL', 'SINKER', 'CHANGEUP', #'FOURSEAMFASTBALL' == FASTBALL, 'TWOSEAMFASTBALL' == SINKER
                    'SLIDER', 'CURVEBALL', 'CUTTER', 'SPLITTER']
         style_cell(sheet, 'C1', 'Batter Hand', bold=True, size=14)
         style_cell(sheet, 'B2', 'Left', bold=True, size=14)

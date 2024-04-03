@@ -129,8 +129,9 @@ def outputPitcherAverages():
     if (infieldDataFrame == []):
         loadData() # Need to do this so we can normalize
         print("loadData()")
-
+    # RUN GETRAWDATA ON THE PITCHER AVERAGES (MAYBE JUST ON A SINGLE POINT TO FORMAT)
     pitchingAveragesDF = DataUtil.getRawDataFrame('Data/PitchMetricAverages_AsOf_2024-03-11.csv')
+    
     # drop nan values from the used columns
     specific_columns = ["PitcherThrows", "BatterSide", "TaggedPitchType", "RelSpeed", "InducedVertBreak", "HorzBreak", "RelHeight", "RelSide", "SpinAxis", "SpinRate", "VertApprAngle", "HorzApprAngle"] # pitcher averages
     infieldDataFrame = infieldDataFrame[specific_columns] 

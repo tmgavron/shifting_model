@@ -129,15 +129,15 @@ def outputPitcherAverages():
     if (infieldDataFrame == []):
         loadData() # Need to do this so we can normalize
         print("loadData()")
+
     # RUN GETRAWDATA ON THE PITCHER AVERAGES (MAYBE JUST ON A SINGLE POINT TO FORMAT)
+    # ALSO NEED TO ADD DUPLICATES (ONE LEFT BATTER AND ONE RIGHT BATTER)
     pitchingAveragesDF = DataUtil.getRawDataFrame('Data/PitchMetricAverages_AsOf_2024-03-11.csv')
-    
-    # drop nan values from the used columns
+
+    # Formatting/Cleaning of averages and infield data for normalizing
     specific_columns = ["PitcherThrows", "BatterSide", "TaggedPitchType", "RelSpeed", "InducedVertBreak", "HorzBreak", "RelHeight", "RelSide", "SpinAxis", "SpinRate", "VertApprAngle", "HorzApprAngle"] # pitcher averages
     infieldDataFrame = infieldDataFrame[specific_columns] 
     averagesX = pitchingAveragesDF[specific_columns] # pitcher averages
-    #averagesX = averagesX[["PitcherThrows", "BatterSide", "TaggedPitchType", "PlateLocHeight", "PlateLocSide", "ZoneSpeed", "RelSpeed", "SpinRate", "HorzBreak", "VertBreak"]]
-
     averagesX["PitcherThrows"] = averagesX["PitcherThrows"].map({"Left":1, "Right":2, "Both":3})
     averagesX["BatterSide"] = averagesX["BatterSide"].map({"Left":1, "Right":2})
     averagesX["TaggedPitchType"] = averagesX["TaggedPitchType"].map({"Fastball": 1, "FourSeamFastBall":1, "Sinker":2, "TwoSeamFastBall":2, "Cutter":3, "Curveball":4, "Slider":5, "ChangeUp":6, "Splitter":7, "Knuckleball":8})
@@ -145,10 +145,6 @@ def outputPitcherAverages():
     # normalize this based on min and maxes from training data
     averagesX = DataUtil.normalizeData(averagesX, infieldDataFrame)
 
-    # Change the value of index to look at different datapoints
-    importlib.reload(VisualUtil)
-
-    # svm = svmOutput[0]
     predictionKey = []
     predictions = []
     for index in range(pitchingAveragesDF.shape[0]):

@@ -132,7 +132,7 @@ def outputPitcherAverages():
 
     # RUN GETRAWDATA ON THE PITCHER AVERAGES (MAYBE JUST ON A SINGLE POINT TO FORMAT)
     # ALSO NEED TO ADD DUPLICATES (ONE LEFT BATTER AND ONE RIGHT BATTER)
-    pitchingAveragesDF = DataUtil.getRawDataFrame('Data/PitchMetricAverages_AsOf_2024-03-11.csv')
+    pitchingAveragesDF = DataUtil.getRawDataFrame('Data/PitchMetricAverages_AsOf_2024-03-11.csv', [])
 
     # Formatting/Cleaning of averages and infield data for normalizing
     specific_columns = ["PitcherThrows", "BatterSide", "TaggedPitchType", "RelSpeed", "InducedVertBreak", "HorzBreak", "RelHeight", "RelSide", "SpinAxis", "SpinRate", "VertApprAngle", "HorzApprAngle"] # pitcher averages
@@ -214,7 +214,6 @@ conn_info = psycopg2.connect(DATABASE_URL)
 conn = psycopg2.connect(**conn_info)
 
 print("Connected successfully")
-
 cur = conn.cursor()
 
 pitchers = [
@@ -244,18 +243,19 @@ pitchers = [
     'tilly_cameron',
     'watts_dylan'
 ]
-
-
 pitch_type = ["fastball", "sinker", "changeup", "slider", "curveball", "cutter", "splitter"]
 
-
-
-cur.execute("SELECT * FROM allsup_chase_fastball_avg_view")
+# Pull all pitcher averages:
+cur.execute("SELECT * FROM pitcher_pitch_type_avg_view")
 
 rows = cur.fetchall()
 for row in rows:
     print(row)
 
+# write to defensive_shift_model_values view 
+# Pitcher, PitcherTeam, and PitchType => ModelValues
+
+# trackman_pitcher, trackman_batter Join based on pitch uid
 
 # Close the connection
 cur.close()

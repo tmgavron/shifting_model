@@ -9,6 +9,7 @@ from ftplib import FTP
 from pathlib import Path
 from io import BytesIO
 import json
+import psycopg2
 
 config = configparser.ConfigParser()
 config.read('Data//config.ini')
@@ -22,16 +23,36 @@ listOfCols = ["Pitcher", "PitcherId", "BatterId", "PitcherThrows", "BatterSide",
 def getData():  
     df = pd.DataFrame()
     if("True" in config['DATA']['DB_API']):
-        pass
+        df = getFTPData()
     elif ("True" in config['DATA']['FTP_API']):
         df = getFTPData()
     elif ("True" in config['DATA']['RawData']):
-        df = getRawDataFrame("Data/TrackMan_NoStuff_Master.csv")
+        df = getRawDataFrame("Data/TrackMan_NoStuff_Master.csv", [])
     elif ("True" in config['DATA']['FileZillaCSV']):
-        df = getRawDataFrame('Data/combined_dataset.csv')
+        df = getRawDataFrame('Data/combined_dataset.csv', [])
     else:
         print("No Data Source Selected")
     return df
+
+def getDBData():
+    DATABASE_URL = "postgres://dbgetta:m269A178J92JUk47Jd28jTah2aH1@datagetta.cse.eng.auburn.edu:5432/datagetta_db"
+    # Parse the connection URL
+    conn_info = psycopg2.connect(DATABASE_URL)
+    # Connect to the PostgreSQL server
+    conn = psycopg2.connect(**conn_info)
+    cur = conn.cursor()
+
+    # trackman_pitcher, trackman_batter : Join based on pitch uid
+    # This should pull all of the pitches (currently only contains this year, waiting on more to be added)
+    cur.execute("SELECT * FROM trackman_pitcher tp INNER JOIN trackman_batter tb ON tp.pitch_uid = tb.pitch_uid;")
+
+    rows = cur.fetchall()
+        
+    # Close the connection
+    cur.close()
+    conn.close()
+
+    return getRawDataFrame('', rows)
 
 
 def getFTPData():
@@ -177,20 +198,78 @@ def getFTPData():
 
 # Input: filename (name of file or path to file)
 # Ouput: list of datapoints with desired columns
-def getRawDataFrame(filename):
+def getRawDataFrame(filename, rows):
     raw_data = list()
-    with open(filename, 'r', encoding='utf-8') as file:
-        csv_reader = csv.reader(file)
+    if filename != "":
+        with open(filename, 'r', encoding='utf-8') as file:
+            csv_reader = csv.reader(file)
 
-        # Skip the header row
-        next(csv_reader)
+            # Skip the header row
+            next(csv_reader)
 
+            # Create List of column indexes from column name
+            indexDic = {}
+            for colName in listOfCols:
+                indexDic[colName] = find_column_index(filename, colName)
+
+            for row in csv_reader:
+                # This is so that if the index is -1 (column does not exist), the value will be nan
+                row.append(np.nan)
+                raw_row = list()
+                # ID's:
+                raw_row.append(str(row[indexDic["Pitcher"]])) # Pitcher
+                #raw_row.append(str(row[indexDic["PitchUID"]])) # PitchUID
+                raw_row.append(str(row[indexDic["PitcherId"]])) # PitcherId
+                raw_row.append(str(row[indexDic["BatterId"]])) # BatterId
+                # Setup Info:
+                raw_row.append(str(row[indexDic["PitcherThrows"]])) # PitcherThrows
+                raw_row.append(str(row[indexDic["BatterSide"]])) # BatterSide
+                raw_row.append(str(row[indexDic["TaggedPitchType"]])) # TaggedPitchType
+                raw_row.append(str(row[indexDic["AutoPitchType"]])) # AutoPitchType
+                raw_row.append(str(row[indexDic["PitchCall"]])) # PitchCall (look for in play)
+                raw_row.append(str(row[indexDic["TaggedHitType"]])) # TaggedHitType
+                raw_row.append(str(row[indexDic["PlayResult"]])) # PlayResult
+                # Pitch Stats:
+                raw_row.append(safe_float_conversion(row[indexDic["RelSpeed"]])) # RelSpeed
+                raw_row.append(safe_float_conversion(row[indexDic["RelHeight"]])) # RelHeight
+                raw_row.append(safe_float_conversion(row[indexDic["RelSide"]])) # RelSide
+                raw_row.append(safe_float_conversion(row[indexDic["VertRelAngle"]])) # VertRelAngle
+                raw_row.append(safe_float_conversion(row[indexDic["HorzRelAngle"]])) # HorzRelAngle
+                raw_row.append(safe_float_conversion(row[indexDic["SpinRate"]])) # SpinRate
+                raw_row.append(safe_float_conversion(row[indexDic["SpinAxis"]])) # SpinAxis
+                raw_row.append(safe_float_conversion(row[indexDic["InducedVertBreak"]])) # InducedVertBreak
+                raw_row.append(safe_float_conversion(row[indexDic["VertBreak"]])) # VertBreak
+                raw_row.append(safe_float_conversion(row[indexDic["HorzBreak"]])) # HorzBreak
+                raw_row.append(safe_float_conversion(row[indexDic["Extension"]])) # Extension
+                raw_row.append(safe_float_conversion(row[indexDic["PlateLocHeight"]])) # PlateLocHeight
+                raw_row.append(safe_float_conversion(row[indexDic["PlateLocSide"]])) # PlateLocSide
+                raw_row.append(safe_float_conversion(row[indexDic["ZoneSpeed"]])) # ZoneSpeed
+                raw_row.append(safe_float_conversion(row[indexDic["VertApprAngle"]])) # VertApprAngle
+                raw_row.append(safe_float_conversion(row[indexDic["HorzApprAngle"]])) # HorzApprAngle
+                # Hit Stats:
+                raw_row.append(safe_float_conversion(row[indexDic["ExitSpeed"]])) # ExitSpeed
+                raw_row.append(safe_float_conversion(row[indexDic["Angle"]])) # Angle
+                raw_row.append(safe_float_conversion(row[indexDic["HitSpinRate"]])) # HitSpinRate
+                raw_row.append(safe_float_conversion(row[indexDic["PositionAt110X"]])) # PositionAt110X
+                raw_row.append(safe_float_conversion(row[indexDic["PositionAt110Y"]])) # PositionAt110Y
+                raw_row.append(safe_float_conversion(row[indexDic["PositionAt110Z"]])) # PositionAt110Z
+                raw_row.append(safe_float_conversion(row[indexDic["Distance"]])) # Distance
+                # Labels:
+                raw_row.append(safe_float_conversion(row[indexDic["Direction"]])) # Direction (for infield ground balls)
+                raw_row.append(safe_float_conversion(row[indexDic["Bearing"]])) # Bearing (for outfield flys balls etc)
+                # Confidence:
+                raw_row.append(str(row[indexDic["HitLaunchConfidence"]])) # Confidence of Direction being right (for infield ground balls)
+                raw_row.append(str(row[indexDic["HitLandingConfidence"]])) # Confidence of Bearing being right (for outfield fly balls etc)
+
+                # Add Datapoint
+                raw_data.append(raw_row)
+    else:
         # Create List of column indexes from column name
         indexDic = {}
         for colName in listOfCols:
-            indexDic[colName] = find_column_index(filename, colName)
+            indexDic[colName] = find_column_index(filename, colName, rows[0])
 
-        for row in csv_reader:
+        for row in rows:
             # This is so that if the index is -1 (column does not exist), the value will be nan
             row.append(np.nan)
             raw_row = list()
@@ -241,7 +320,6 @@ def getRawDataFrame(filename):
 
             # Add Datapoint
             raw_data.append(raw_row)
-
     # Create dataframe
     raw_dataframe = pd.DataFrame(raw_data, columns=listOfCols)
     # raw_dataframe.dropna(axis=0, how='any')        
@@ -401,12 +479,18 @@ def outfieldFilter(df):
     # csv_file_path: name of file (path if not in folder),
     # header_name: name of desired column to find index
 # Output: the index of the column in that file/dataset (or -1 if not found)
-def find_column_index(csv_file_path, header_name):
-    with open(csv_file_path, newline='') as csvfile:
-        reader = csv.reader(csvfile)
-        headers = next(reader)  # Read the first line as the header
-        if header_name in headers:
-            return headers.index(header_name)
+def find_column_index(csv_file_path, header_name, row):
+    if row== []:
+        with open(csv_file_path, newline='') as csvfile:
+            reader = csv.reader(csvfile)
+            headers = next(reader)  # Read the first line as the header
+            if header_name in headers:
+                return headers.index(header_name)
+            else:
+                return -1  # Return -1 or raise an error if the header is not found
+    else:
+        if header_name in row:
+                return headers.index(header_name)
         else:
             return -1  # Return -1 or raise an error if the header is not found
 

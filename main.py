@@ -1,7 +1,7 @@
 # Imports
 from Models import ModelUtil
 from Data import Preprocessing, DataUtil
-from Visualization import VisualUtil, batch_image_to_excel
+# from Visualization import VisualUtil, batch_image_to_excel
 from Logs import logging as logs
 
 import importlib
@@ -14,8 +14,8 @@ config.read('Data//config.ini')
 
 importlib.reload(Preprocessing)
 importlib.reload(ModelUtil)
-importlib.reload(VisualUtil)
-importlib.reload(batch_image_to_excel)
+# importlib.reload(VisualUtil)
+# importlib.reload(batch_image_to_excel)
 importlib.reload(logs)
 
 import warnings

@@ -8,6 +8,7 @@ import importlib
 import configparser
 # import numpy as np
 import pickle
+from urllib.parse import urlparse
 
 config = configparser.ConfigParser()
 config.read('Data//config.ini')
@@ -208,10 +209,29 @@ import psycopg2
 DATABASE_URL = "postgres://dbgetta:m269A178J92JUk47Jd28jTah2aH1@datagetta.cse.eng.auburn.edu:5432/datagetta_db"
 
 # Parse the connection URL
-conn_info = psycopg2.connect(DATABASE_URL)
+result = urlparse(DATABASE_URL)
 
-# Connect to the PostgreSQL server
-conn = psycopg2.connect(**conn_info)
+# Extract the individual components
+username = result.username
+password = result.password
+database = result.path[1:]  # Remove the leading '/'
+hostname = result.hostname
+port = result.port
+
+# Connect to the PostgreSQL server using the extracted components
+conn = psycopg2.connect(
+    dbname=database,
+    user=username,
+    password=password,
+    host=hostname,
+    port=port
+)
+
+# # Parse the connection URL
+# conn_info = psycopg2.connect(DATABASE_URL)
+
+# # Connect to the PostgreSQL server
+# conn = psycopg2.connect(**conn_info)
 
 print("Connected successfully")
 cur = conn.cursor()
@@ -249,8 +269,10 @@ pitch_type = ["fastball", "sinker", "changeup", "slider", "curveball", "cutter",
 cur.execute("SELECT * FROM pitcher_pitch_type_avg_view")
 
 rows = cur.fetchall()
-for row in rows:
-    print(row)
+# for row in rows:
+print(rows[0])
+column_headers = [desc[0] for desc in cur.description]
+print(column_headers)
 
 # write to defensive_shift_model_values view 
 # Pitcher, PitcherTeam, and PitchType => ModelValues

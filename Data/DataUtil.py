@@ -200,7 +200,7 @@ def getFTPData():
 # Ouput: list of datapoints with desired columns
 def getRawDataFrame(filename, rows):
     raw_data = list()
-    if filename != "":
+    if rows == []:
         with open(filename, 'r', encoding='utf-8') as file:
             csv_reader = csv.reader(file)
 
@@ -210,7 +210,7 @@ def getRawDataFrame(filename, rows):
             # Create List of column indexes from column name
             indexDic = {}
             for colName in listOfCols:
-                indexDic[colName] = find_column_index(filename, colName)
+                indexDic[colName] = find_column_index(filename, colName, [])
 
             for row in csv_reader:
                 # This is so that if the index is -1 (column does not exist), the value will be nan

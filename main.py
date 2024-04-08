@@ -203,7 +203,63 @@ def predictSinglePitcherStat(dataPoint):
 
     return averageProbs
 
+import psycopg2
 
+DATABASE_URL = "postgres://dbgetta:m269A178J92JUk47Jd28jTah2aH1@datagetta.cse.eng.auburn.edu:5432/datagetta_db"
+
+# Parse the connection URL
+conn_info = psycopg2.connect(DATABASE_URL)
+
+# Connect to the PostgreSQL server
+conn = psycopg2.connect(**conn_info)
+
+print("Connected successfully")
+
+cur = conn.cursor()
+
+pitchers = [
+    'allsup_chase',
+    'armstrong_john',
+    'bauman_tanner',
+    'booton_trevor',
+    'bray_elliott',
+    'cannon_will',
+    'carlson_parker',
+    'chancellor_abe',
+    'copeland_konner',
+    'crotchfelt_zach',
+    'gonzalez_joseph',
+    'graves_griffin',
+    'herberholz_christian',
+    'horne_trevor',
+    'keplinger_konner',
+    'keshock_cameron',
+    'mcbride_connor',
+    'murphy_hayden',
+    'myers_carson',
+    'nelson_drew',
+    'petrovic_alexander',
+    'schorr_ben',
+    'sofield_drew',
+    'tilly_cameron',
+    'watts_dylan'
+]
+
+
+pitch_type = ["fastball", "sinker", "changeup", "slider", "curveball", "cutter", "splitter"]
+
+
+
+cur.execute("SELECT * FROM allsup_chase_fastball_avg_view")
+
+rows = cur.fetchall()
+for row in rows:
+    print(row)
+
+
+# Close the connection
+cur.close()
+conn.close()
 
 # Run this every monday:
 loadData() # replace CSV data with all current data (including new weekly data)

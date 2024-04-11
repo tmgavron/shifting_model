@@ -46,11 +46,11 @@ def dataFiltering(df, useNewProcessing):
     if useNewProcessing:
         infieldDataFrame, infieldX = DataUtil.infieldFilter(df)
         print("\nInfield Data: (No Pitcher / Batter IDs)")
-        display(infieldDataFrame)
+        # display(infieldDataFrame)
 
         outfieldDataFrame, outfieldX = DataUtil.outfieldFilter(df)
         print("\nOutfield Data: (No Pitcher / Batter IDs)")
-        display(outfieldDataFrame)
+        # display(outfieldDataFrame)
         
         return (infieldDataFrame, infieldX), (outfieldDataFrame, outfieldX)
     else:

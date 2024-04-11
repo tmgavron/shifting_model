@@ -1,22 +1,17 @@
 # Imports
 from Models import ModelUtil
 from Data import Preprocessing, DataUtil
-# from Visualization import VisualUtil, batch_image_to_excel
 from Logs import logging as logs
 
 import importlib
 import configparser
-# import numpy as np
 import pickle
-from urllib.parse import urlparse
 
 config = configparser.ConfigParser()
 config.read('Data//config.ini')
 
 importlib.reload(Preprocessing)
 importlib.reload(ModelUtil)
-# importlib.reload(VisualUtil)
-# importlib.reload(batch_image_to_excel)
 importlib.reload(logs)
 
 import warnings
@@ -30,13 +25,11 @@ def loadData():
     # 1) Load all data from preprocessing 
     newprocessing = 'True' in config['DATA']['USE_NEW_PREPROCESSING']
     infieldDataFrame, outfieldDataFrame = Preprocessing.dataFiltering([], newprocessing)
+    return infieldDataFrame, outfieldDataFrame
 
 
 # Function to train all models based on settings from config
-def trainModels():
-    if (infieldDataFrame == []):
-        loadData() # Need to do this so we can normalize
-        print("loadData()")
+def trainModels(infieldDataFrame, outfieldDataFrame):
     models = {}
     # 2) Trains all Models and exports all data to an Excel Sheet
     max_depth = 50
@@ -94,7 +87,7 @@ def trainModels():
             # if("True" in config['MODELS']['RF']):
             #     for i in range(0, len(trainIn)):
             #         direction, distance = ModelUtil.runRFR(trainIn[i], trainOut[i], testIn[i], testOut[i])
-    
+    return models
 
 # Function to load models from their pickle files
 def loadModels():
@@ -123,46 +116,22 @@ def loadModels():
     return models
 
 # Function to output all average pitcher photos from 'Data/PitchMetricAverages_AsOf_2024-03-11.csv'
-def outputPitcherAverages():
-    if (models == []):
-        models = loadModels()
-        print("loadModels()")
-    if (infieldDataFrame == []):
-        loadData() # Need to do this so we can normalize
-        print("loadData()")
-
-    # RUN GETRAWDATA ON THE PITCHER AVERAGES (MAYBE JUST ON A SINGLE POINT TO FORMAT)
-    # ALSO NEED TO ADD DUPLICATES (ONE LEFT BATTER AND ONE RIGHT BATTER)
-    pitchingAveragesDF = DataUtil.getRawDataFrame('Data/PitchMetricAverages_AsOf_2024-03-11.csv', [])
-
-    # Formatting/Cleaning of averages and infield data for normalizing
-    specific_columns = ["PitcherThrows", "BatterSide", "TaggedPitchType", "RelSpeed", "InducedVertBreak", "HorzBreak", "RelHeight", "RelSide", "SpinAxis", "SpinRate", "VertApprAngle", "HorzApprAngle"] # pitcher averages
-    infieldDataFrame = infieldDataFrame[specific_columns] 
-    averagesX = pitchingAveragesDF[specific_columns] # pitcher averages
-    averagesX["PitcherThrows"] = averagesX["PitcherThrows"].map({"Left":1, "Right":2, "Both":3})
-    averagesX["BatterSide"] = averagesX["BatterSide"].map({"Left":1, "Right":2})
-    averagesX["TaggedPitchType"] = averagesX["TaggedPitchType"].map({"Fastball": 1, "FourSeamFastBall":1, "Sinker":2, "TwoSeamFastBall":2, "Cutter":3, "Curveball":4, "Slider":5, "ChangeUp":6, "Splitter":7, "Knuckleball":8})
-
-    # normalize this based on min and maxes from training data
-    averagesX = DataUtil.normalizeData(averagesX, infieldDataFrame)
-
+def outputPitcherAverages(data, pitchingAveragesDF, models):
     predictionKey = []
     predictions = []
-    for index in range(pitchingAveragesDF.shape[0]):
-        averageProbs = predictSinglePitcherStat(averagesX.iloc[index])
+    for index in range(data.shape[0]):
+        if index != 0:
+            averageProbs, error = predictSinglePitcherStat(data.iloc[index], models) 
+            if error == True:
+                print(pitchingAveragesDF.iloc[index]["Pitcher"])
+            else:
+                player = pitchingAveragesDF.iloc[index][0].replace(",", "_")
+                pitch = pitchingAveragesDF.iloc[index]["TaggedPitchType"]
+                batterSide = pitchingAveragesDF.iloc[index]["BatterSide"]
+                team = pitchingAveragesDF.iloc[index]["PitcherTeam"]
 
-        # This is for visualization:
-        # print(f"\n\nAVG Prediction: \t\t{np.argmax(averageProbs)+1}")
-        # print(f"Field Slice AVG Probabilities: \t{averageProbs}")
-        # fileName = pitchingAveragesDF.iloc[index][0].replace(",", "_").replace(" ", "") + "_" + pitchingAveragesDF.iloc[index]["TaggedPitchType"] + "_" + pitchingAveragesDF.iloc[index]["BatterSide"] + "Batter"
-        # VisualUtil.visualizeData(averageProbs, [1], fileName)   
-
-        player = pitchingAveragesDF.iloc[index][0].replace(",", "_")
-        pitch = pitchingAveragesDF.iloc[index]["TaggedPitchType"]
-        batterSide = pitchingAveragesDF.iloc[index]["BatterSide"]
-
-        predictionKey.append([player,pitch,batterSide])
-        predictions.append(averageProbs)
+                predictionKey.append([player,pitch,batterSide,team])
+                predictions.append(averageProbs)
 
     # batch_image_to_excel.create_excel() 
 
@@ -170,120 +139,66 @@ def outputPitcherAverages():
     # predictionKey holds the player, pitch, and batter side information for the corresponding index in the predictions
     return predictionKey, predictions
 
-def predictSinglePitcherStat(dataPoint):
-    if (models == []):
-        models = loadModels()
-        print("loadModels()")
-
-    dt = models["DT"][0]
-    nb = models["NB"][0]
-    logReg = models["LR"][0]
-    svm = models["SVM"][0]
-
+def predictSinglePitcherStat(dataPoint, models):
     averageProbs= []
     modelTypeCount = 0
+    averageProbs.append([0,0,0,0,0])
+    error = False
     # For each selected model (config), add in the predicted probabilities
     if("True" in config['MODELS']['DTC']):
-        averageProbs += dt.predict_proba([dataPoint])[0]
-        modelTypeCount += 1
+        dt = models["DT"][0]
+        try:
+            averageProbs += dt.predict_proba([dataPoint])[0]
+            modelTypeCount += 1
+        except:
+            error = True
 
     if("True" in config['MODELS']['NB']):   
-        averageProbs += nb.predict_proba([dataPoint])[0]
-        modelTypeCount += 1
+        nb = models["NB"][0]
+        try:
+            averageProbs += nb.predict_proba([dataPoint])[0]
+            modelTypeCount += 1
+        except:
+            error = True
 
     if("True" in config['MODELS']['LR']):    
-        averageProbs += logReg.predict_proba([dataPoint])[0]
-        modelTypeCount += 1
+        logReg = models["LR"][0]
+        try:
+            averageProbs += logReg.predict_proba([dataPoint])[0]
+            modelTypeCount += 1
+        except:
+            error = True
 
     if("True" in config['MODELS']['SVM']):
-        averageProbs += svm.predict_proba([dataPoint])[0]
-        modelTypeCount += 1
+        svm = models["SVM"][0]
+        try:
+            averageProbs += svm.predict_proba([dataPoint])[0]
+            modelTypeCount += 1
+        except:
+            error = True
 
     # Average the selected model's probabilities 
     averageProbs = averageProbs / modelTypeCount
 
-    return averageProbs
+    return averageProbs, error
 
-import psycopg2
 
-DATABASE_URL = "postgres://dbgetta:m269A178J92JUk47Jd28jTah2aH1@datagetta.cse.eng.auburn.edu:5432/datagetta_db"
+# Run this every monday:
+# Load the data and the models (train models every monday)
+infieldDataFrame, outfieldDataFrame = loadData() # replace CSV data with all current data (including new weekly data)
+models = trainModels(infieldDataFrame, outfieldDataFrame) # re-train models on new data (based on config)
+    # models = loadModels() # If you do not want to retrain the models run this instead of train
 
-# Parse the connection URL
-result = urlparse(DATABASE_URL)
+# Connect to database and pull pitcher averages from SQL
+cur, conn = DataUtil.databaseConnect()
+averagesData, pitchingAveragesDF = DataUtil.getPitcherAverages(cur, infieldDataFrame, outfieldDataFrame, "None")
 
-# Extract the individual components
-username = result.username
-password = result.password
-database = result.path[1:]  # Remove the leading '/'
-hostname = result.hostname
-port = result.port
-
-# Connect to the PostgreSQL server using the extracted components
-conn = psycopg2.connect(
-    dbname=database,
-    user=username,
-    password=password,
-    host=hostname,
-    port=port
-)
-
-# # Parse the connection URL
-# conn_info = psycopg2.connect(DATABASE_URL)
-
-# # Connect to the PostgreSQL server
-# conn = psycopg2.connect(**conn_info)
-
-print("Connected successfully")
-cur = conn.cursor()
-
-pitchers = [
-    'allsup_chase',
-    'armstrong_john',
-    'bauman_tanner',
-    'booton_trevor',
-    'bray_elliott',
-    'cannon_will',
-    'carlson_parker',
-    'chancellor_abe',
-    'copeland_konner',
-    'crotchfelt_zach',
-    'gonzalez_joseph',
-    'graves_griffin',
-    'herberholz_christian',
-    'horne_trevor',
-    'keplinger_konner',
-    'keshock_cameron',
-    'mcbride_connor',
-    'murphy_hayden',
-    'myers_carson',
-    'nelson_drew',
-    'petrovic_alexander',
-    'schorr_ben',
-    'sofield_drew',
-    'tilly_cameron',
-    'watts_dylan'
-]
-pitch_type = ["fastball", "sinker", "changeup", "slider", "curveball", "cutter", "splitter"]
-
-# Pull all pitcher averages:
-cur.execute("SELECT * FROM pitcher_pitch_type_avg_view")
-
-rows = cur.fetchall()
-# for row in rows:
-print(rows[0])
-column_headers = [desc[0] for desc in cur.description]
-print(column_headers)
+# Run pitcher average predictions
+predictionKey, predictions = outputPitcherAverages(averagesData, pitchingAveragesDF, models) # change this to output predictions to the sql database to be read in and visualized when opening that players page
 
 # write to defensive_shift_model_values view 
-# Pitcher, PitcherTeam, and PitchType => ModelValues
-
-# trackman_pitcher, trackman_batter Join based on pitch uid
+DataUtil.writePitcherAverages(cur, conn, predictionKey, predictions)
 
 # Close the connection
 cur.close()
 conn.close()
-
-# Run this every monday:
-loadData() # replace CSV data with all current data (including new weekly data)
-trainModels() # re-train models on new data (based on config)
-predictionKey, predictions = outputPitcherAverages() # change this to output predictions to the sql database to be read in and visualized when opening that players page

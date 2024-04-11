@@ -10,6 +10,9 @@ from pathlib import Path
 from io import BytesIO
 import json
 import psycopg2
+from decimal import Decimal
+from urllib.parse import urlparse
+
 
 config = configparser.ConfigParser()
 config.read('Data//config.ini')
@@ -18,12 +21,12 @@ config.read('Data//config.ini')
 listOfCols = ["Pitcher", "PitcherId", "BatterId", "PitcherThrows", "BatterSide", "TaggedPitchType", "AutoPitchType", "PitchCall", "TaggedHitType", "PlayResult", 
               "RelSpeed", "RelHeight", "RelSide", "VertRelAngle", "HorzRelAngle", "SpinRate", "SpinAxis", "InducedVertBreak", "VertBreak", "HorzBreak", "Extension", 
               "PlateLocHeight", "PlateLocSide", "ZoneSpeed", "VertApprAngle", "HorzApprAngle", "ExitSpeed", "Angle", "HitSpinRate", "PositionAt110X", "PositionAt110Y",
-              "PositionAt110Z", "Distance", "Direction", "Bearing", "HitLaunchConfidence", "HitLandingConfidence"]
+              "PositionAt110Z", "Distance", "Direction", "Bearing", "HitLaunchConfidence", "HitLandingConfidence", "PitcherTeam", "BatterTeam"]
 
 def getData():  
     df = pd.DataFrame()
     if("True" in config['DATA']['DB_API']):
-        df = getFTPData()
+        df = getDBPitchData()
     elif ("True" in config['DATA']['FTP_API']):
         df = getFTPData()
     elif ("True" in config['DATA']['RawData']):
@@ -34,25 +37,167 @@ def getData():
         print("No Data Source Selected")
     return df
 
-def getDBData():
+# Function to connect to the database and return a cursor so that queries can be run
+def databaseConnect():
     DATABASE_URL = "postgres://dbgetta:m269A178J92JUk47Jd28jTah2aH1@datagetta.cse.eng.auburn.edu:5432/datagetta_db"
     # Parse the connection URL
-    conn_info = psycopg2.connect(DATABASE_URL)
-    # Connect to the PostgreSQL server
-    conn = psycopg2.connect(**conn_info)
+    result = urlparse(DATABASE_URL)
+    # Extract the individual components
+    username = result.username
+    password = result.password
+    database = result.path[1:]  # Remove the leading '/'
+    hostname = result.hostname
+    port = result.port
+
+    # Connect to the PostgreSQL server using the extracted components
+    conn = psycopg2.connect(
+        dbname=database,
+        user=username,
+        password=password,
+        host=hostname,
+        port=port
+    )
+    print("Connected to database successfully")
     cur = conn.cursor()
+    return cur, conn
+
+# Function to get pitcher averages
+def getPitcherAverages(cur, infieldDataFrame, outfieldDataFrame, teamFilter):
+    # Pull all pitcher averages:
+    # cur.execute("SELECT * FROM pitcher_pitch_type_avg_view WHERE \"PitcherTeam\" = 'AUB_PRC'") # auburn team filter for testing
+    cur.execute("SELECT * FROM pitcher_pitch_type_avg_view") # No team filter
+    rows = cur.fetchall()
+
+    # for row in rows:
+    column_headers = [desc[0] for desc in cur.description]
+    index = 0
+    # Renaming columns to work with preprocessing functions
+    for i in column_headers:
+        if i == "PitchType":
+            column_headers[index] = "TaggedPitchType"
+        if i == "avg_rel_speed":
+            column_headers[index] = "RelSpeed"
+        if i == "avg_induced_vert":
+            column_headers[index] = "InducedVertBreak"
+        if i == "avg_horz_break":
+            column_headers[index] = "HorzBreak"
+        if i == "avg_rel_height":
+            column_headers[index] = "RelHeight"
+        if i == "avg_rel_side":
+            column_headers[index] = "RelSide"
+        if i == "avg_extension":
+            column_headers[index] = "Extension"
+        if i == "avg_spin_rate":
+            column_headers[index] = "SpinRate"
+        if i == "avg_spin_axis":
+            column_headers[index] = "SpinAxis"
+        if i == "avg_vert_appr_angle":
+            column_headers[index] = "VertApprAngle"
+        if i == "avg_horz_appr_angle":
+            column_headers[index] = "HorzApprAngle"
+
+        index += 1 
+
+    column_headers.append("BatterSide")
+    averagesData = [column_headers] + convertSQLToList(rows)
+
+    # Add duplicates for LEFT VS RIGHT Batters
+    # Assuming 'averagesData' is a list of lists
+    # Initialize the new data list
+    newData = []
+    index = 0
+    # Loop through the entire dataset
+    for dataPoint in averagesData:
+        if index != 0:
+            # Make a copy of the current data point for the "Left" version
+            dataPointLeft = dataPoint[:]  # This ensures you're working with a copy
+            dataPointLeft.append("Left")
+            # Add the "Left" version to the new data list
+            newData.append(dataPointLeft)
+            
+            # Make a copy of the current data point for the "Right" version
+            dataPointRight = dataPoint[:]  # Make another copy for the "Right" version
+            dataPointRight.append("Right")
+            # Add the "Right" version to the new data list
+            newData.append(dataPointRight)
+        else:
+            newData.append(dataPoint)
+        index += 1
+# 'newData' now contains each original datapoint duplicated with one having a "Left" and the other a "Right" value
+
+
+    pitchingAveragesDF = getRawDataFrame('', newData) # DataUtil.getRawDataFrame('Data/PitchMetricAverages_AsOf_2024-03-11.csv', [])
+
+    # Formatting/Cleaning of averages and infield data for normalizing
+    specific_columns = ["PitcherThrows", "BatterSide", "TaggedPitchType", "RelSpeed", "InducedVertBreak", "HorzBreak", "RelHeight", "RelSide", "SpinAxis", "SpinRate", "VertApprAngle", "HorzApprAngle"] # pitcher averages
+    infieldDataFrame = infieldDataFrame[specific_columns] 
+    averagesX = pitchingAveragesDF[specific_columns] # pitcher averages
+    averagesX["PitcherThrows"] = averagesX["PitcherThrows"].map({"Left":1, "Right":2, "Both":3})
+    averagesX["BatterSide"] = averagesX["BatterSide"].map({"Left":1, "Right":2})
+    averagesX["TaggedPitchType"] = averagesX["TaggedPitchType"].map({"Fastball": 1, "FourSeamFastBall":1, "Sinker":2, "TwoSeamFastBall":2, "Cutter":3, "Curveball":4, "Slider":5, "Changeup":6, "Splitter":7, "Knuckleball":8})
+
+    # normalize this based on min and maxes from training data
+    averagesX = normalizeData(averagesX, infieldDataFrame)
+    
+    # return averages normalized, and raw dataframe for metadata
+    return averagesX, pitchingAveragesDF
+
+# Function to write pitcher averages output to database:
+def writePitcherAverages(cur, conn, key, values):
+    for index in range(len(key)):
+        if index != 0:
+            upsert_query = """
+            INSERT INTO defensive_shift_model_values ("Pitcher", "PitcherTeam", "PitchType", "BatterSide", "ModelValues")
+            VALUES (%s, %s, %s, %s, %s)
+            ON CONFLICT ("Pitcher", "PitcherTeam", "PitchType", "BatterSide")
+            DO UPDATE SET "ModelValues" = EXCLUDED."ModelValues"
+            """
+
+            from decimal import Decimal
+
+            # Assuming values[index] is a one-dimensional numpy array of numbers
+            # Convert the numpy array to a list of Python Decimal objects
+            model_values_list = [Decimal('{:.5f}'.format(x)) for x in values[index].tolist()[0]]
+
+            # Insert or update Pitcher name, team name, pitch type, batter side, and model values
+            data_to_upsert = (key[index][0], key[index][3], key[index][1], key[index][2], model_values_list)
+
+            # Execute the upsert command
+            cur.execute(upsert_query, data_to_upsert)
+
+    # Commit the transaction if necessary
+    conn.commit()
+
+# function to get all database pitch data for training
+def getDBPitchData():
+    cur, conn = databaseConnect()
 
     # trackman_pitcher, trackman_batter : Join based on pitch uid
     # This should pull all of the pitches (currently only contains this year, waiting on more to be added)
     cur.execute("SELECT * FROM trackman_pitcher tp INNER JOIN trackman_batter tb ON tp.pitch_uid = tb.pitch_uid;")
 
     rows = cur.fetchall()
-        
+    
+    column_headers = [desc[0] for desc in cur.description]
+    data = convertSQLToList(rows)
+    data = [column_headers] + data
+
     # Close the connection
     cur.close()
     conn.close()
+    
+    return getRawDataFrame('', data)
 
-    return getRawDataFrame('', rows)
+# Function for converting SQL returned data from database to a list 
+def convertSQLToList(data):
+    dataList = []
+
+    for row in data:
+    # Convert the tuple to a list, replacing Decimal with string
+        converted_row = [str(item) if isinstance(item, Decimal) else item for item in row]
+        dataList.append(converted_row)
+
+    return dataList
 
 
 def getFTPData():
@@ -260,7 +405,8 @@ def getRawDataFrame(filename, rows):
                 # Confidence:
                 raw_row.append(str(row[indexDic["HitLaunchConfidence"]])) # Confidence of Direction being right (for infield ground balls)
                 raw_row.append(str(row[indexDic["HitLandingConfidence"]])) # Confidence of Bearing being right (for outfield fly balls etc)
-
+                raw_row.append(str(row[indexDic["PitcherTeam"]]))
+                raw_row.append(str(row[indexDic["BatterTeam"]]))
                 # Add Datapoint
                 raw_data.append(raw_row)
     else:
@@ -317,7 +463,8 @@ def getRawDataFrame(filename, rows):
             # Confidence:
             raw_row.append(str(row[indexDic["HitLaunchConfidence"]])) # Confidence of Direction being right (for infield ground balls)
             raw_row.append(str(row[indexDic["HitLandingConfidence"]])) # Confidence of Bearing being right (for outfield fly balls etc)
-
+            raw_row.append(str(row[indexDic["PitcherTeam"]]))
+            raw_row.append(str(row[indexDic["BatterTeam"]]))
             # Add Datapoint
             raw_data.append(raw_row)
     # Create dataframe
@@ -408,32 +555,6 @@ def infieldFilter(df):
 
         return df
     
-#     # This function filters the given Pandas DataFrame specifically for infield data fields for pitcher averages. These fields are used just for initial testing and
-# #   training of the Models
-# # Inputs:
-#     # df: the fieldDataFrame
-# # Output: the filtered DataFrame
-# def infieldFilterForAverages(df):
-#     # ----- PREVIOUS FILTERING -----
-#     # df = df[df["PitcherThrows"].isin(["Left", "Right", "Both"])] # 1, 2, 3 (can remove Both)
-#     # df["PitcherThrows"] = df["PitcherThrows"].map({"Left":1, "Right":2, "Both":3})
-#     # df = df[df["BatterSide"].isin(["Left","Right"])] # 1, 2
-#     # df["BatterSide"] = df["BatterSide"].map({"Left":1, "Right":2})
-#     df = df[df["TaggedPitchType"].isin(["Fastball", "Sinker", "Cutter", "Curveball", "Slider", "Changeup", "Splitter", "Knuckleball"])] # 1,2,3,4,5,6,7,8
-#     df["TaggedPitchType"] = df["TaggedPitchType"].map({"Fastball":1, "Sinker":2, "Cutter":3, "Curveball":4, "Slider":5, "Changeup":6, "Splitter":7, "Knuckleball":8})
-#     # df = df[df["PitchCall"].str.contains("InPlay")]
-#     # df = df[df["TaggedHitType"].str.contains("GroundBall")]
-#     # df = df[df["Direction"].between(-45, 45)]
-#     # bins = [-45, -27, -9, 9, 27, 45]
-#     # labels = [1,2,3,4,5]
-#     # df["FieldSlice"] = pd.cut(df["Direction"], bins=bins, labels=labels)
-#     # df = df[df["HitLaunchConfidence"].isin(["Medium","High"])]
-#     # print("--")
-#     # print(df)
-#     # print("--")
-    
-#     return df
-
 
 # This function filters the given Pandas DataFrame specifically for outfield data fields. These fields are used just for initial testing and
 #   training of the Models
@@ -480,7 +601,7 @@ def outfieldFilter(df):
     # header_name: name of desired column to find index
 # Output: the index of the column in that file/dataset (or -1 if not found)
 def find_column_index(csv_file_path, header_name, row):
-    if row== []:
+    if row == []:
         with open(csv_file_path, newline='') as csvfile:
             reader = csv.reader(csvfile)
             headers = next(reader)  # Read the first line as the header
@@ -490,7 +611,7 @@ def find_column_index(csv_file_path, header_name, row):
                 return -1  # Return -1 or raise an error if the header is not found
     else:
         if header_name in row:
-                return headers.index(header_name)
+                return row.index(header_name)
         else:
             return -1  # Return -1 or raise an error if the header is not found
 
@@ -500,7 +621,7 @@ def find_column_index(csv_file_path, header_name, row):
 def safe_float_conversion(value):
     try:
         return float(value)
-    except ValueError:
+    except:
         return float('nan')  # or use None if you prefer
     
 # This function normalizes the given DataFrame

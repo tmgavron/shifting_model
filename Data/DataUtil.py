@@ -10,8 +10,10 @@ from pathlib import Path
 from io import BytesIO
 import json
 import psycopg2
+from psycopg2 import sql, DatabaseError, IntegrityError
 from decimal import Decimal
 from urllib.parse import urlparse
+import pickle
 
 
 config = configparser.ConfigParser()
@@ -31,8 +33,14 @@ def getData():
         df = getFTPData()
     elif ("True" in config['DATA']['RawData']):
         df = getRawDataFrame("Data/TrackMan_NoStuff_Master.csv", [])
+        if ("True" in config['DATA']['Pickle']):
+            saveDataToPickle('Data/TrackMan_NoStuff_Master.csv', 'Data/pickle_saved_data.pickle')
     elif ("True" in config['DATA']['FileZillaCSV']):
         df = getRawDataFrame('Data/combined_dataset.csv', [])
+        if ("True" in config['DATA']['Pickle']):
+            saveDataToPickle('Data/combined_dataset.csv', 'Data/pickle_saved_data.pickle')
+    elif ("True" in config['DATA']['LoadWithPickle']):
+        df = getPickleData('Data/pickle_saved_data.pickle')
     else:
         print("No Data Source Selected")
     return df
@@ -163,10 +171,18 @@ def writePitcherAverages(cur, conn, key, values):
             data_to_upsert = (key[index][0], key[index][3], key[index][1], key[index][2], model_values_list)
 
             # Execute the upsert command
-            cur.execute(upsert_query, data_to_upsert)
-
-    # Commit the transaction if necessary
-    conn.commit()
+            try:
+                # Execute the query
+                cur.execute(upsert_query, data_to_upsert)
+                conn.commit()  # Commit changes only if there are no errors
+            except IntegrityError as e:
+                # Handle foreign key violation or other integrity issues
+                print("IntegrityError:", e)
+                conn.rollback()  # Roll back the transaction on error
+            except DatabaseError as e:
+                # Handle other database-related errors
+                print("DatabaseError:", e)
+                conn.rollback()
 
 # function to get all database pitch data for training
 def getDBPitchData():
@@ -199,6 +215,22 @@ def convertSQLToList(data):
 
     return dataList
 
+
+def saveDataToPickle(filename, pickle_file_path):
+    # Read CSV content into a list of dictionaries
+    with open(filename, mode='r', newline='', encoding='utf-8') as file:
+        csv_reader = csv.DictReader(file)
+        data = [row for row in csv_reader]
+    
+    # Serialize data to a pickle file
+    with open(pickle_file_path, mode='wb') as pfile:
+        pickle.dump(data, pfile)
+
+def getPickleData(pickle_file_path):
+    # Deserialize data from a pickle file
+    with open(pickle_file_path, mode='rb') as pfile:
+        data = pickle.load(pfile)
+    return getRawDataFrame('', data)
 
 def getFTPData():
     dates = config['FTP']['EarliestMonth']+"-"+config['FTP']['EarliestDay']+"-"+config['FTP']['EarliestYear']+"_"+config['FTP']['LatestMonth']+"-"+config['FTP']['LatestDay']+"-"+config['FTP']['LatestYear']

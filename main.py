@@ -49,7 +49,7 @@ def trainModels(infieldDataFrame, outfieldDataFrame):
     if ("False" in config['TRAIN']['Testing']):
         runCount = 1
         print("Not Testing")
-    for j in range(runCount):
+    for j in range(1, runCount+1):
             xTrain, xTest, yTrain, yTest = ModelUtil.modelDataSplitting(infieldDataFrame, j, 0.25,'InfieldTrainingFilter')
 
             if("True" in config['MODELS']['DTC']):

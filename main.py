@@ -125,10 +125,10 @@ def outputPitcherAverages(data, pitchingAveragesDF, models):
             if error == True:
                 print(pitchingAveragesDF.iloc[index]["Pitcher"])
             else:
-                player = pitchingAveragesDF.iloc[index][0].replace(",", "_")
-                pitch = pitchingAveragesDF.iloc[index]["TaggedPitchType"]
-                batterSide = pitchingAveragesDF.iloc[index]["BatterSide"]
-                team = pitchingAveragesDF.iloc[index]["PitcherTeam"]
+                player = pitchingAveragesDF.iloc[index][0].replace(",", "_").replace(' ', '')
+                pitch = pitchingAveragesDF.iloc[index]["TaggedPitchType"].replace(' ', '')
+                batterSide = pitchingAveragesDF.iloc[index]["BatterSide"].replace(' ', '')
+                team = pitchingAveragesDF.iloc[index]["PitcherTeam"].replace(' ', '')
 
                 predictionKey.append([player,pitch,batterSide,team])
                 predictions.append(averageProbs)

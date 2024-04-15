@@ -31,7 +31,7 @@ def visualizeData(infieldStats, outfieldStats, filename):
     initializeFieldVariables()
     infield_slices  = infieldStats.__len__()
     outfield_slices = outfieldStats.__len__()
-
+    #print(config['VISUAL']['Heatmap']=='True')
     # Tweakable params for the heatmap
     heatmap_horz_density = int(config['VISUAL']['HorizontalDensity'])
     heatmap_vert_density = int(config['VISUAL']['VerticalDensity'])
@@ -58,7 +58,7 @@ def visualizeData(infieldStats, outfieldStats, filename):
     else:
         fillSlices(draw, infield_slices,  infieldStats,  DISTANCE_TO_FENCE, OUTFIELD_ARC,  ORANGE_LIGHT, ORANGE_DARK)
         drawOnlyInfield(draw, infield_slices)
-
+    #print('Output/' + filename + '.png')
     surface.write_to_png('Output/' + filename + '.png')
 
     # Write text on top of the image
@@ -241,10 +241,10 @@ def convertToMoundSpace(stats, vert_density, horz_density):
     # stats[0] = angle from -45 to 45
     # stats[1] = distance from 150 to 400
     heatmap = np.zeros((vert_density, horz_density))
-    for stat in stats:
-        horz = math.floor((stat[0] + 45)/(90 / horz_density))
-        vert = math.floor((stat[1] - 150)/(250 / vert_density))
-        heatmap[vert][horz] += 1
+    for i,stat in enumerate(stats):
+        vert = math.floor(i/5) #math.floor((stat - 150)/(250 / vert_density))
+        horz = i - (vert*5) #math.floor((stat + 45)/(90 / horz_density))
+        heatmap[vert][horz] = stat #+= 1
     return heatmap
 
 # Circle = (x, y, r)

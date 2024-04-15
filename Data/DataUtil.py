@@ -139,13 +139,14 @@ def getPitcherAverages(cur, infieldDataFrame, outfieldDataFrame, teamFilter):
     # Formatting/Cleaning of averages and infield data for normalizing
     specific_columns = ["PitcherThrows", "BatterSide", "TaggedPitchType", "RelSpeed", "InducedVertBreak", "HorzBreak", "RelHeight", "RelSide", "SpinAxis", "SpinRate", "VertApprAngle", "HorzApprAngle"] # pitcher averages
     infieldDataFrame = infieldDataFrame[specific_columns] 
+    outfieldDataFrame = outfieldDataFrame[specific_columns] 
     averagesX = pitchingAveragesDF[specific_columns] # pitcher averages
     averagesX["PitcherThrows"] = averagesX["PitcherThrows"].map({"Left":1, "Right":2, "Both":3})
     averagesX["BatterSide"] = averagesX["BatterSide"].map({"Left":1, "Right":2})
     averagesX["TaggedPitchType"] = averagesX["TaggedPitchType"].map({"Fastball": 1, "FourSeamFastBall":1, "Sinker":2, "TwoSeamFastBall":2, "Cutter":3, "Curveball":4, "Slider":5, "Changeup":6, "Splitter":7, "Knuckleball":8})
 
     # normalize this based on min and maxes from training data
-    averagesX = normalizeData(averagesX, infieldDataFrame)
+    averagesX = normalizeData(averagesX, infieldDataFrame) # Need to change this to infield and outfield but has Nans when I add them. Need to mess with more.
     
     # return averages normalized, and raw dataframe for metadata
     return averagesX, pitchingAveragesDF
@@ -611,20 +612,58 @@ def outfieldFilter(df):
         return filtered_df, filtered_x
     else:
         # ----- PREVIOUS FILTERING -----
+        df = df[df["PitcherThrows"].isin(["Left", "Right", "Both"])] # 1, 2, 3 (can remove Both)
+        df["PitcherThrows"] = df["PitcherThrows"].map({"Left":1, "Right":2, "Both":3})
+        df = df[df["BatterSide"].isin(["Left","Right"])] # 1, 2
+        df["BatterSide"] = df["BatterSide"].map({"Left":1, "Right":2})
+        df = df[df["TaggedPitchType"].isin(["Fastball", "Sinker", "Cutter", "Curveball", "Slider", "Changeup", "Splitter", "Knuckleball"])] # 1,2,3,4,5,6,7,8
+        df["TaggedPitchType"] = df["TaggedPitchType"].map({"Fastball":1, "Sinker":2, "Cutter":3, "Curveball":4, "Slider":5, "Changeup":6, "Splitter":7, "Knuckleball":8})
+        
         df = df[df["PitchCall"].str.contains("InPlay")]
         df = df[df["TaggedHitType"].isin(["FlyBall","LineDrive"])]
         df = df[df["Distance"] >= 150]
+        df = df[df["Distance"] <= 405]
         df = df[df["Bearing"].between(-45, 45)]
         bins = [-45, -27, -9, 9, 27, 45]
         labels = [1,2,3,4,5]
         df['FieldSlice'] = pd.cut(df['Bearing'], bins=bins, labels=labels)
-        # df = df[df["HitLandingConfidence"].isin(["Medium","High"])]
+        bins = [150, 235, 320, 405]
+        labels = [1,2,3]
+        df['FieldDepth'] = pd.cut(df['Distance'], bins=bins, labels=labels)
+        df['FieldSlice'] = df['FieldSlice'].cat.codes
+        df['FieldDepth'] = df['FieldDepth'].cat.codes
+        df = df.assign(FieldSection=lambda x: ((x['FieldDepth'] * 5)+ x['FieldSlice']))
+         # df = df[df["HitLandingConfidence"].isin(["Medium","High"])]
 
         specific_columns = json.loads(config.get('TRAIN','OutfieldOverallFilter'))
         df = df.dropna(axis=0, how='any',subset=specific_columns)
         df = df[specific_columns]
 
         return df
+    """
+    # ----- PREVIOUS FILTERING -----
+        df = df[df["PitcherThrows"].isin(["Left", "Right", "Both"])] # 1, 2, 3 (can remove Both)
+        df["PitcherThrows"] = df["PitcherThrows"].map({"Left":1, "Right":2, "Both":3})
+        df = df[df["BatterSide"].isin(["Left","Right"])] # 1, 2
+        df["BatterSide"] = df["BatterSide"].map({"Left":1, "Right":2})
+        df = df[df["TaggedPitchType"].isin(["Fastball", "Sinker", "Cutter", "Curveball", "Slider", "Changeup", "Splitter", "Knuckleball"])] # 1,2,3,4,5,6,7,8
+        df["TaggedPitchType"] = df["TaggedPitchType"].map({"Fastball":1, "Sinker":2, "Cutter":3, "Curveball":4, "Slider":5, "Changeup":6, "Splitter":7, "Knuckleball":8})
+        df = df[df["PitchCall"].str.contains("InPlay")]
+        df = df[df["TaggedHitType"].str.contains("GroundBall")]
+        df = df[df["Direction"].between(-45, 45)]
+        bins = [-45, -27, -9, 9, 27, 45]
+        labels = [1,2,3,4,5]
+        df["FieldSlice"] = pd.cut(df["Direction"], bins=bins, labels=labels)
+        # df = df[df["HitLaunchConfidence"].isin(["Medium","High"])]
+        # print("--")
+        # print(df)
+        # print("--")
+        
+        specific_columns = json.loads(config.get('TRAIN','InfieldOverallFilter'))
+        df = df.dropna(axis=0, how='any',subset=specific_columns)
+        df = df[specific_columns]
+
+        return df"""
 
 
 # This function finds the index of a given column in a dataset

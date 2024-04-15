@@ -14,7 +14,7 @@ config.read('Data//config.ini')
 def writeLog(log, name="", descriptor=".txt"):
     now = datetime.now()
     dt_string = now.strftime(" %d-%m-%Y %H %M")
-    with open(f"logs/{name}{dt_string}{descriptor}", 'w') as file:
+    with open(f"Logs/{name}{dt_string}{descriptor}", 'w') as file:
         for row in log:
             file.write(row)
             file.write("\n")
@@ -381,7 +381,7 @@ def printOutfieldModel(modelType, model, train_stats, test_stats, data, params):
 def writeToExcelSheet(logDF, name=""):
     now = datetime.now()
     dt_string = now.strftime("_%m-%Y")
-    filename = f"logs/ModelStatistics{dt_string}.xlsx"
+    filename = f"Logs/ModelStatistics{dt_string}.xlsx"
     exists = os.path.isfile(filename)
     hbool = False
     if not exists:
@@ -405,7 +405,7 @@ def writeToExcelSheet(logDF, name=""):
 def writeToImageExcelSheet(picList, name=""):
     now = datetime.now()
     dt_string = now.strftime("_%m-%Y")
-    filename = f"logs/ModelStatistics{dt_string}.xlsx"
+    filename = f"Logs/ModelStatistics{dt_string}.xlsx"
     exists = os.path.isfile(filename)
     hbool = False
     if not exists:
@@ -514,7 +514,7 @@ def excelAverages(modelType, sColumns, sColumnsLetter):
 
     now = datetime.now()
     dt_string = now.strftime("_%m-%Y")
-    filename = f"logs/ModelStatistics{dt_string}.xlsx"
+    filename = f"Logs/ModelStatistics{dt_string}.xlsx"
     wb = openpyxl.load_workbook(filename)
     #first_sheet = wb.get_sheet_names()[0]
     worksheet = wb.get_sheet_by_name(modelType)

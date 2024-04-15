@@ -33,12 +33,12 @@ def getData():
         df = getFTPData()
     elif ("True" in config['DATA']['RawData']):
         df = getRawDataFrame("Data/TrackMan_NoStuff_Master.csv", [])
-        if ("True" in config['DATA']['Pickle']):
-            saveDataToPickle('Data/TrackMan_NoStuff_Master.csv', 'Data/pickle_saved_data.pickle')
+        # if ("True" in config['DATA']['Pickle']):
+        #     saveDataToPickle('Data/TrackMan_NoStuff_Master.csv', 'Data/pickle_saved_data.pickle')
     elif ("True" in config['DATA']['FileZillaCSV']):
         df = getRawDataFrame('Data/combined_dataset.csv', [])
-        if ("True" in config['DATA']['Pickle']):
-            saveDataToPickle('Data/combined_dataset.csv', 'Data/pickle_saved_data.pickle')
+        # if ("True" in config['DATA']['Pickle']):
+        #     saveDataToPickle('Data/combined_dataset.csv', 'Data/pickle_saved_data.pickle')
     elif ("True" in config['DATA']['LoadWithPickle']):
         df = getPickleData('Data/pickle_saved_data.pickle')
     else:

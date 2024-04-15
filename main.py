@@ -2,6 +2,7 @@
 from Models import ModelUtil
 from Data import Preprocessing, DataUtil
 from Logs import logging as logs
+import numpy as np
 
 import importlib
 import configparser
@@ -236,12 +237,14 @@ cur, conn = DataUtil.databaseConnect()
 averagesData, pitchingAveragesDF = DataUtil.getPitcherAverages(cur, infieldDataFrame, outfieldDataFrame, "None")
 
 # Run pitcher average predictions
-predictionKey, predictions, predictionso = outputPitcherAverages(averagesData, pitchingAveragesDF, models) # change this to output predictions to the sql database to be read in and visualized when opening that players page
+predictionKey, predictionsIn, predictionso = outputPitcherAverages(averagesData, pitchingAveragesDF, models) # change this to output predictions to the sql database to be read in and visualized when opening that players page
 
-predictions = predictions+predictionso
+predictions = predictionsIn+predictionso
+# combined list where first 5 values are the infield predictions, and the next 15 are the outfield predictions
+combined_list = [np.concatenate([a, b], axis=1) for a, b in zip(predictionsIn, predictionso)]
 
-# write to defensive_shift_model_values view 
-DataUtil.writePitcherAverages(cur, conn, predictionKey, predictions)
+# write to defensive_shift_model_values view (30+ minutes)
+DataUtil.writePitcherAverages(cur, conn, predictionKey, combined_list)
 
 # Close the connection
 cur.close()

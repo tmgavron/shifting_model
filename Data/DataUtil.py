@@ -152,7 +152,7 @@ def getPitcherAverages(cur, infieldDataFrame, outfieldDataFrame, teamFilter):
     return averagesX, pitchingAveragesDF
 
 # Function to write pitcher averages output to database:
-def writePitcherAverages(cur, conn, key, values, valueso):
+def writePitcherAverages(cur, conn, key, values):
     for index in range(len(key)):
         if index != 0:
             upsert_query = """

@@ -19,7 +19,7 @@ def writeLog(log, name="", descriptor=".txt"):
             file.write(row)
             file.write("\n")
 
-def logModel(modelType, model, train_stats, test_stats, data, params):
+def logModel(modelType, model, train_stats, test_stats, data, params, fieldModelType):
     # weights = [w for w in model.w]
     
     # log.append("Weights:")
@@ -121,7 +121,163 @@ def logModel(modelType, model, train_stats, test_stats, data, params):
 
 
 
-def printModel(modelType, model, train_stats, test_stats, data, params):
+def printModel(modelType, model, train_stats, test_stats, data, params, fieldModelType):
+    # weights = [w for w in model.w]
+    
+    # log.append("Weights:")
+
+    # log += [",".join([str(w) for w in class_w]) for class_w in weights]
+
+    log = list()
+    print(f"Model Type: {modelType}")
+    print("")
+    print(f"Training Size = {len(data[0])}")
+    print(f"Testing Size = {len(data[2])}")
+    print("")
+    print(f"Training Accuracy = {train_stats[0]}")
+    print(f"Testing Accuracy = {test_stats[0]}")
+    print("")
+    print(f"Training Average Error = {train_stats[1]}")
+    print(f"Testing Average Error = {test_stats[1]}")    
+    print("")
+    print(f"Training Recall = {train_stats[2]}")
+    print(f"Testing Recall = {test_stats[2]}")
+    print("")
+    print(f"Training f1 (micro, macro, weighted) = {train_stats[3]}")
+    print(f"Testing f1 (micro, macro, weighted) = {test_stats[3]}")
+    print("")
+    print(f"Training auc (macro, weighted) = {train_stats[4]}")
+    print(f"Testing auc (macro, weighted) = {test_stats[4]}")
+    
+    print("")
+    print("Hyper-Parameters: \n")
+    i = 0
+    while i < len(params):
+        print(f"{params[i]}{params[i+1]}")
+        i += 2
+    print("")
+
+    # Filtering for Statistics
+    
+    train_x = data[0]
+    train_y = data[1]
+    test_x = data[2]
+    test_y = data[3]
+    y_trainPred = data[4]
+    y_pred = data[5]
+
+    if fieldModelType in "Infield":
+        s = "Slice"
+    if fieldModelType in "Outfield":
+        s = "Section"
+
+    dftrain = train_x.copy()
+    dftrain["Field"+s+"Prediction"] = y_trainPred #add to columns
+    dftrain["Field"+s+"Actual"] = train_y
+    dftrain = dftrain.assign(Correct = lambda x: (x["Field"+s+"Actual"] == x["Field"+s+"Prediction"]))
+
+    dftest = test_x.copy()
+    dftest["Field"+s+"Prediction"] = y_pred #add to columns
+    dftest["Field"+s+"Actual"] = test_y
+    dftest = dftest.assign(Correct = lambda x: (x["Field"+s+"Actual"] == x["Field"+s+"Prediction"]))
+    
+    dfall = pd.concat([dftrain, dftest]) # add rows
+
+    # Can either leave this code below or essentially switch it all with var=dftrain["FieldSliceActual"].value_counts()[1]
+    dfTestStats = dftest.groupby(["Field"+s+"Actual"]).size().reset_index()
+    dfTestStats = dfTestStats.rename(columns={"Field"+s+"Actual":"Field "+s,0:"Count of Actual"})
+    dfTestStats["Count of Predicted"] = dftest.groupby(["Field"+s+"Prediction"]).size().reset_index()[0]
+    dftemp = dftest[dftest["Correct"] == True]
+    dfTestStats["Correct"] = dftemp.groupby(["Field"+s+"Actual"]).size().reset_index()[0]
+
+    dfTrainStats = dftrain.groupby(["Field"+s+"Actual"]).size().reset_index()
+    dfTrainStats = dfTrainStats.rename(columns={"Field"+s+"Actual":"Field "+s,0:"Count of Actual"})
+    dfTrainStats["Count of Predicted"] = dftrain.groupby(["Field"+s+"Prediction"]).size().reset_index()[0]
+    dftemp = dftrain[dftrain["Correct"] == True]
+    dfTrainStats["Correct"] = dftemp.groupby(["Field"+s+"Actual"]).size().reset_index()[0]
+
+    dftrain = train_x.copy()
+    dftrain["Field"+s+"Prediction"] = y_trainPred #add to columns
+    dftrain["Field"+s+"Actual"] = train_y
+    dftrain = dftrain.assign(Correct = lambda x: (x["Field"+s+"Actual"] == x["Field"+s+"Prediction"]))
+
+    dftest = test_x.copy()
+    dftest["Field"+s+"Prediction"] = y_pred #add to columns
+    dftest["Field"+s+"Actual"] = test_y
+    dftest = dftest.assign(Correct = lambda x: (x["Field"+s+"Actual"] == x["Field"+s+"Prediction"]))
+    
+    dfall = pd.concat([dftrain, dftest]) # add rows
+
+    # Can either leave this code below or essentially switch it all with var=dftrain["FieldSliceActual"].value_counts()[1]
+    dfTestStats = dftest.groupby(["Field"+s+"Actual"]).size().reset_index()
+    dfTestStats = dfTestStats.rename(columns={"Field"+s+"Actual":"Field "+s,0:"Count of Actual"})
+    dfTestStats["Count of Predicted"] = dftest.groupby(["Field"+s+"Prediction"]).size().reset_index()[0]
+    dftemp = dftest[dftest["Correct"] == True]
+    dfTestStats["Correct"] = dftemp.groupby(["Field"+s+"Actual"]).size().reset_index()[0]
+
+    dfTrainStats = dftrain.groupby(["Field"+s+"Actual"]).size().reset_index()
+    dfTrainStats = dfTrainStats.rename(columns={"Field"+s+"Actual":"Field "+s,0:"Count of Actual"})
+    dfTrainStats["Count of Predicted"] = dftrain.groupby(["Field"+s+"Prediction"]).size().reset_index()[0]
+    dftemp = dftrain[dftrain["Correct"] == True]
+    dfTrainStats["Correct"] = dftemp.groupby(["Field"+s+"Actual"]).size().reset_index()[0]
+
+
+    print("Accuracy Score for Predicting on Training Data: " + str('{:.4f}'.format(train_stats[1])))
+    print("Accuracy Score for Predicting on Test Data: " + str('{:.4f}'.format(test_stats[0])))
+
+    probs = model.predict_proba(test_x)
+    colprob = colsum(probs, len(probs[0]), len(probs))
+    colperc = ['{:.2f}'.format(n*100) for n in colprob]
+
+    if fieldModelType in "Infield":
+        s = "Slice"
+        print("\nOverall Average Probabilities\n-------------------------------------" )
+        print("Section 1: " + str(colperc[0]) + "%\nSection 2: " + str(colperc[1]) + "%\nSection 3: " + str(colperc[2]) + "%")
+        print("Section 4: " + str(colperc[3]) + "%\nSection 5: " + str(colperc[4]) + "%")
+        print("")
+
+        print("Field Slice Counts for Training Data\n--------------------------------------------------")
+        print("Section\tTruth\tPrediction")
+        for i in range(dfTrainStats["Field Slice"].size):
+            print(str(dfTrainStats["Field Slice"][i]) +"\t\t"+ str(dfTrainStats["Count of Actual"][i]) +"\t\t"+ str(dfTrainStats["Count of Predicted"][i]))
+        print("Amount Correct: " + str(dftrain["Correct"].value_counts()[True]))
+        print("Amount Incorrect: " + str(dftrain["Correct"].value_counts()[False]))    
+        print("")
+
+        print("Field Slice Counts for Testing Data\n--------------------------------------------------")
+        print("Section\tTruth\tPrediction")
+        for i in range(dfTestStats["Field Slice"].size):
+            print(str(dfTestStats["Field Slice"][i]) +"\t\t"+ str(dfTestStats["Count of Actual"][i]) +"\t\t"+ str(dfTestStats["Count of Predicted"][i]))
+        print("Amount Correct: " + str(dftest["Correct"].value_counts()[True]))
+        print("Amount Incorrect: " + str(dftest["Correct"].value_counts()[False]))
+
+    if fieldModelType in "Outfield":
+        s = "Section"
+        print("\nOverall Average Probabilities\n-------------------------------------" )
+        print("Section 6: " + str(colperc[0]) + "%\nSection 7: " + str(colperc[1]) + "%\nSection 8: " + str(colperc[2]) + "%")
+        print("Section 9: " + str(colperc[3]) + "%\nSection 10: " + str(colperc[4]) + "%"+ "%\nSection 11: " + str(colperc[5]) + "%")
+        print("Section 12: " + str(colperc[6]) + "%\nSection 13: " + str(colperc[7]) + "%\nSection 14: " + str(colperc[8]) + "%")
+        print("Section 15: " + str(colperc[9]) + "%\nSection 16: " + str(colperc[10]) + "%"+ "%\nSection 17: " + str(colperc[11]) + "%")
+        print("Section 18: " + str(colperc[12]) + "%\nSection 19: " + str(colperc[13]) + "%"+ "%\nSection 20: " + str(colperc[14]) + "%")
+        print("")
+
+        print("Field Slice Counts for Training Data\n--------------------------------------------------")
+        print("Section\tTruth\tPrediction")
+        for i in range(dfTrainStats["Field Section"].size):
+            print(str(int(dfTrainStats["Field Section"][i])+6) +"\t\t"+ str(dfTrainStats["Count of Actual"][i]) +"\t\t"+ str(dfTrainStats["Count of Predicted"][i]))
+        print("Amount Correct: " + str(dftrain["Correct"].value_counts()[True]))
+        print("Amount Incorrect: " + str(dftrain["Correct"].value_counts()[False]))
+        print("")
+
+        print("Field Section Counts for Testing Data\n--------------------------------------------------")
+        print("Section\tTruth\tPrediction")
+        for i in range(dfTestStats["Field Section"].size):
+            print(str(int(dfTrainStats["Field Section"][i])+6) +"\t\t"+ str(dfTestStats["Count of Actual"][i]) +"\t\t"+ str(dfTestStats["Count of Predicted"][i]))
+        print("Amount Correct: " + str(dftest["Correct"].value_counts()[True]))
+        print("Amount Incorrect: " + str(dftest["Correct"].value_counts()[False]))
+
+    
+def printOutfieldModel(modelType, model, train_stats, test_stats, data, params):
     # weights = [w for w in model.w]
     
     # log.append("Weights:")
@@ -167,29 +323,29 @@ def printModel(modelType, model, train_stats, test_stats, data, params):
     y_pred = data[5]
 
     dftrain = train_x.copy()
-    dftrain["FieldSlicePrediction"] = y_trainPred #add to columns
-    dftrain["FieldSliceActual"] = train_y
-    dftrain = dftrain.assign(Correct = lambda x: (x["FieldSliceActual"] == x["FieldSlicePrediction"]))
+    dftrain["FieldSectionPrediction"] = y_trainPred #add to columns
+    dftrain["FieldSectionActual"] = train_y
+    dftrain = dftrain.assign(Correct = lambda x: (x["FieldSectionActual"] == x["FieldSectionPrediction"]))
 
     dftest = test_x.copy()
-    dftest["FieldSlicePrediction"] = y_pred #add to columns
-    dftest["FieldSliceActual"] = test_y
-    dftest = dftest.assign(Correct = lambda x: (x["FieldSliceActual"] == x["FieldSlicePrediction"]))
+    dftest["FieldSectionPrediction"] = y_pred #add to columns
+    dftest["FieldSectionActual"] = test_y
+    dftest = dftest.assign(Correct = lambda x: (x["FieldSectionActual"] == x["FieldSectionPrediction"]))
     
     dfall = pd.concat([dftrain, dftest]) # add rows
 
     # Can either leave this code below or essentially switch it all with var=dftrain["FieldSliceActual"].value_counts()[1]
-    dfTestStats = dftest.groupby(["FieldSliceActual"]).size().reset_index()
-    dfTestStats = dfTestStats.rename(columns={"FieldSliceActual":"Field Slice",0:"Count of Actual"})
-    dfTestStats["Count of Predicted"] = dftest.groupby(["FieldSlicePrediction"]).size().reset_index()[0]
+    dfTestStats = dftest.groupby(["FieldSectionActual"]).size().reset_index()
+    dfTestStats = dfTestStats.rename(columns={"FieldSectionActual":"Field Section",0:"Count of Actual"})
+    dfTestStats["Count of Predicted"] = dftest.groupby(["FieldSectionPrediction"]).size().reset_index()[0]
     dftemp = dftest[dftest["Correct"] == True]
-    dfTestStats["Correct"] = dftemp.groupby(["FieldSliceActual"]).size().reset_index()[0]
+    dfTestStats["Correct"] = dftemp.groupby(["FieldSectionActual"]).size().reset_index()[0]
 
-    dfTrainStats = dftrain.groupby(["FieldSliceActual"]).size().reset_index()
-    dfTrainStats = dfTrainStats.rename(columns={"FieldSliceActual":"Field Slice",0:"Count of Actual"})
-    dfTrainStats["Count of Predicted"] = dftrain.groupby(["FieldSlicePrediction"]).size().reset_index()[0]
+    dfTrainStats = dftrain.groupby(["FieldSectionActual"]).size().reset_index()
+    dfTrainStats = dfTrainStats.rename(columns={"FieldSectionActual":"Field Section",0:"Count of Actual"})
+    dfTrainStats["Count of Predicted"] = dftrain.groupby(["FieldSectionPrediction"]).size().reset_index()[0]
     dftemp = dftrain[dftrain["Correct"] == True]
-    dfTrainStats["Correct"] = dftemp.groupby(["FieldSliceActual"]).size().reset_index()[0]
+    dfTrainStats["Correct"] = dftemp.groupby(["FieldSectionActual"]).size().reset_index()[0]
 
 
     print("Accuracy Score for Predicting on Training Data: " + str('{:.4f}'.format(train_stats[1])))
@@ -199,22 +355,25 @@ def printModel(modelType, model, train_stats, test_stats, data, params):
     colprob = colsum(probs, len(probs[0]), len(probs))
     colperc = ['{:.2f}'.format(n*100) for n in colprob]
     print("\nOverall Average Probabilities\n-------------------------------------" )
-    print("Section 1: " + str(colperc[0]) + "%\nSection 2: " + str(colperc[1]) + "%\nSection 3: " + str(colperc[2]) + "%")
-    print("Section 4: " + str(colperc[3]) + "%\nSection 5: " + str(colperc[4]) + "%")
+    print("Section 6: " + str(colperc[0]) + "%\nSection 7: " + str(colperc[1]) + "%\nSection 8: " + str(colperc[2]) + "%")
+    print("Section 9: " + str(colperc[3]) + "%\nSection 10: " + str(colperc[4]) + "%"+ "%\nSection 11: " + str(colperc[5]) + "%")
+    print("Section 12: " + str(colperc[6]) + "%\nSection 13: " + str(colperc[7]) + "%\nSection 14: " + str(colperc[8]) + "%")
+    print("Section 15: " + str(colperc[9]) + "%\nSection 16: " + str(colperc[10]) + "%"+ "%\nSection 17: " + str(colperc[11]) + "%")
+    print("Section 18: " + str(colperc[12]) + "%\nSection 19: " + str(colperc[13]) + "%"+ "%\nSection 20: " + str(colperc[14]) + "%")
     print("")
 
     print("Field Slice Counts for Training Data\n--------------------------------------------------")
     print("Section\tTruth\tPrediction")
-    for i in range(dfTrainStats["Field Slice"].size):
-        print(str(dfTrainStats["Field Slice"][i]) +"\t\t"+ str(dfTrainStats["Count of Actual"][i]) +"\t\t"+ str(dfTrainStats["Count of Predicted"][i]))
+    for i in range(dfTrainStats["Field Section"].size):
+        print(str(int(dfTrainStats["Field Section"][i])+6) +"\t\t"+ str(dfTrainStats["Count of Actual"][i]) +"\t\t"+ str(dfTrainStats["Count of Predicted"][i]))
     print("Amount Correct: " + str(dftrain["Correct"].value_counts()[True]))
-    print("Amount Incorrect: " + str(dftrain["Correct"].value_counts()[False]))    
+    print("Amount Incorrect: " + str(dftrain["Correct"].value_counts()[False]))
     print("")
 
-    print("Field Slice Counts for Testing Data\n--------------------------------------------------")
+    print("Field Section Counts for Testing Data\n--------------------------------------------------")
     print("Section\tTruth\tPrediction")
-    for i in range(dfTestStats["Field Slice"].size):
-        print(str(dfTestStats["Field Slice"][i]) +"\t\t"+ str(dfTestStats["Count of Actual"][i]) +"\t\t"+ str(dfTestStats["Count of Predicted"][i]))
+    for i in range(dfTestStats["Field Section"].size):
+        print(str(int(dfTrainStats["Field Section"][i])+6) +"\t\t"+ str(dfTestStats["Count of Actual"][i]) +"\t\t"+ str(dfTestStats["Count of Predicted"][i]))
     print("Amount Correct: " + str(dftest["Correct"].value_counts()[True]))
     print("Amount Incorrect: " + str(dftest["Correct"].value_counts()[False]))
 
@@ -280,7 +439,7 @@ def writeToImageExcelSheet(picList, name=""):
 
     wb.save(filename)
 
-def ExcelModel(modelType, model, train_stats, test_stats, data, params): #need to add what kind of training splits done?
+def ExcelModel(modelType, model, train_stats, test_stats, data, params, fieldModelType): #need to add what kind of training splits done?
     # weights = [w for w in model.w]
     
     # log.append("Weights:")
@@ -339,7 +498,7 @@ def ExcelModel(modelType, model, train_stats, test_stats, data, params): #need t
 
 
 def colsum(arr, n, m):
-    coll = [0,0,0,0,0]
+    coll = [0] * len(arr)
     for i in range(n):
         su = 0;
         for j in range(m):

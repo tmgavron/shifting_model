@@ -98,7 +98,7 @@ def runRFR(train_x, train_y, test_x, test_y):
     # max_leaf_nodes (Maximum number of leaf nodes in the tree)
 # Ouput:
     # Decision Tree Model, Training Accuracy, Testing Accuracy
-def runDT(train_x, train_y, test_x, test_y, max_depth, max_features, max_leaf_nodes):
+def runDT(train_x, train_y, test_x, test_y, max_depth, max_features, max_leaf_nodes, fieldModelType):
     if (config['MODELS']['DTC'] == 'False'):
         return None, None, None
     dt = DecisionTreeClassifier(max_depth=max_depth, max_features=max_features, max_leaf_nodes=max_leaf_nodes) #, class_weight='balanced')
@@ -113,25 +113,31 @@ def runDT(train_x, train_y, test_x, test_y, max_depth, max_features, max_leaf_no
 
     y_trainPred = dt.predict(train_x)
     y_trainProb = dt.predict_proba(train_x)
-    trainStats = get_infield_statistics(train_y, y_trainPred, y_trainProb)
-
+    
     y_pred = dt.predict(test_x)
     y_predProb = dt.predict_proba(test_x)
-    testStats = get_infield_statistics(test_y, y_pred, y_predProb)
+
+    if fieldModelType in "Infield":
+        trainStats = get_infield_statistics(train_y, y_trainPred, y_trainProb)
+        testStats = get_infield_statistics(test_y, y_pred, y_predProb)
+    if fieldModelType in "Outfield":
+        trainStats = get_outfield_statistics(train_y, y_trainPred, y_trainProb)
+        testStats = get_outfield_statistics(test_y, y_pred, y_predProb)
+    
 
     if (config['LOGGING']['Logs'] == 'True'):
         print("logging statistics...")
         logs.logModel("DecisionTree", dt, trainStats, testStats, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
-                    ["Max Tree Depth: ", max_depth, "Max Tree Features: ", max_features, "Max Leaf Nodes: ", max_leaf_nodes])
+                    ["Max Tree Depth: ", max_depth, "Max Tree Features: ", max_features, "Max Leaf Nodes: ", max_leaf_nodes], fieldModelType)
     if (config['LOGGING']['Debug'] == 'True'):
         print("printing statistics...")
         logs.printModel("DecisionTree", dt, trainStats, testStats, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
-                    ["Max Tree Depth: ", max_depth, "Max Tree Features: ", max_features, "Max Leaf Nodes: ", max_leaf_nodes])
+                    ["Max Tree Depth: ", max_depth, "Max Tree Features: ", max_features, "Max Leaf Nodes: ", max_leaf_nodes], fieldModelType)
     if (config['LOGGING']['Excel'] == 'True'):
         print("exporting statistics to Excel...")
         logs.ExcelModel("DecisionTree", dt, trainStats, testStats, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
                     {'Max Tree Depth':max_depth, 'Max Tree Features':max_features, 'Max Leaf Nodes':max_leaf_nodes,
-                     'Tree Depth':dt.get_depth(), 'Tree Features': dt.n_features_in_, 'Leaf Nodes': dt.get_n_leaves()})
+                     'Tree Depth':dt.get_depth(), 'Tree Features': dt.n_features_in_, 'Leaf Nodes': dt.get_n_leaves()}, fieldModelType)
     
     print("done!")
 
@@ -147,7 +153,7 @@ def runDT(train_x, train_y, test_x, test_y, max_depth, max_features, max_leaf_no
     # var_smoothing (ammount of smoothing in the model: 1e-7, 1e-8, 1e-9 [default], 1e-10, 1e-11)
 # Ouput:
     # Naive Bayes Model, Training Accuracy, Testing Accuracy
-def runNB(train_x, train_y, test_x, test_y, var_smoothing):
+def runNB(train_x, train_y, test_x, test_y, var_smoothing, fieldModelType):
     if (config['MODELS']['NB'] == 'False'):
         return None, None, None
     nb = GaussianNB(var_smoothing=var_smoothing) #class_weight='balanced'
@@ -162,23 +168,27 @@ def runNB(train_x, train_y, test_x, test_y, var_smoothing):
 
     y_trainPred = nb.predict(train_x)
     y_trainProb = nb.predict_proba(train_x)
-    trainStats = get_infield_statistics(train_y, y_trainPred, y_trainProb)
 
     y_pred = nb.predict(test_x)
     y_predProb = nb.predict_proba(test_x)
-    testStats = get_infield_statistics(test_y, y_pred, y_predProb)
+    if fieldModelType in "Infield":
+        trainStats = get_infield_statistics(train_y, y_trainPred, y_trainProb)
+        testStats = get_infield_statistics(test_y, y_pred, y_predProb)
+    if fieldModelType in "Outfield":
+        trainStats = get_outfield_statistics(train_y, y_trainPred, y_trainProb)
+        testStats = get_outfield_statistics(test_y, y_pred, y_predProb)
     
     if (config['LOGGING']['Logs'] == 'True'):
         print("logging statistics...")
         logs.logModel("NaiveBayes", nb, trainStats, testStats, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
-                   ["Var Smoothing: ", var_smoothing])
+                   ["Var Smoothing: ", var_smoothing], fieldModelType)
     if (config['LOGGING']['Debug'] == 'True'):
         print("printing statistics...")
         logs.printModel("NaiveBayes", nb, trainStats, testStats, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
-                   ["Var Smoothing: ", var_smoothing])
+                   ["Var Smoothing: ", var_smoothing], fieldModelType)
     if (config['LOGGING']['Excel'] == 'True'):
         print("exporting statistics to Excel...")
-        logs.ExcelModel("NaiveBayes", nb, trainStats, testStats, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],{'Var Smoothing':var_smoothing})
+        logs.ExcelModel("NaiveBayes", nb, trainStats, testStats, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],{'Var Smoothing':var_smoothing}, fieldModelType)
     
     print("done!")
 
@@ -194,7 +204,7 @@ def runNB(train_x, train_y, test_x, test_y, var_smoothing):
     # e: epochs (iterations)
 # Ouput:
     # Logistic Regression Model, Training Accuracy, Testing Accuracy
-def runLogReg(train_x, train_y, test_x, test_y, lr, e):
+def runLogReg(train_x, train_y, test_x, test_y, lr, e, fieldModelType):
     if (config['MODELS']['LR'] == 'False'):
         return None, None, None
     
@@ -209,24 +219,28 @@ def runLogReg(train_x, train_y, test_x, test_y, lr, e):
 
     y_trainPred = logreg.predict(train_x)
     y_trainProb = logreg.predict_proba(train_x)
-    trainStats = get_infield_statistics(train_y, y_trainPred, y_trainProb)
 
     y_pred = logreg.predict(test_x)
     y_predProb = logreg.predict_proba(test_x)
-    testStats = get_infield_statistics(test_y, y_pred, y_predProb)
+    if fieldModelType in "Infield":
+        trainStats = get_infield_statistics(train_y, y_trainPred, y_trainProb)
+        testStats = get_infield_statistics(test_y, y_pred, y_predProb)
+    if fieldModelType in "Outfield":
+        trainStats = get_outfield_statistics(train_y, y_trainPred, y_trainProb)
+        testStats = get_outfield_statistics(test_y, y_pred, y_predProb)
     
     
     if (config['LOGGING']['Logs'] == 'True'):
         print("logging statistics...")
         logs.logModel("LogisticRegression", logreg, trainStats, testStats, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
-                   ["Learning Rate: ", lr, "Epochs: ", e])
+                   ["Learning Rate: ", lr, "Epochs: ", e], fieldModelType)
     if (config['LOGGING']['Debug'] == 'True'):
         print("printing statistics...")
         logs.printModel("LogisticRegression", logreg, trainStats, testStats, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
-                    ["Learning Rate: ", lr, "Epochs: ", e])
+                    ["Learning Rate: ", lr, "Epochs: ", e], fieldModelType)
     if (config['LOGGING']['Excel'] == 'True'):
         print("exporting statistics to Excel...")
-        logs.ExcelModel("LogisticRegression", logreg, trainStats, testStats, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],{"Learning Rate": lr, "Epochs": e})
+        logs.ExcelModel("LogisticRegression", logreg, trainStats, testStats, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],{"Learning Rate": lr, "Epochs": e}, fieldModelType)
     
     print("done!")
 
@@ -245,7 +259,7 @@ def runLogReg(train_x, train_y, test_x, test_y, lr, e):
     # coef0: Independent term in kernel function (0.0)
 # Ouput:
     # SVM Model, Training Accuracy, Testing Accuracy
-def runSVM(train_x, train_y, test_x, test_y, rC, kernel, degree, gamma, coef0):
+def runSVM(train_x, train_y, test_x, test_y, rC, kernel, degree, gamma, coef0, fieldModelType):
     if (config['MODELS']['SVM'] == 'False'):
         return None, None, None
     
@@ -262,20 +276,24 @@ def runSVM(train_x, train_y, test_x, test_y, rC, kernel, degree, gamma, coef0):
 
     y_trainPred = svm.predict(train_x)
     y_trainProb = svm.predict_proba(train_x)
-    trainStats = get_infield_statistics(train_y, y_trainPred, y_trainProb)
 
     y_pred = svm.predict(test_x)
     y_predProb = svm.predict_proba(test_x)
-    testStats = get_infield_statistics(test_y, y_pred, y_predProb)
+    if fieldModelType in "Infield":
+        trainStats = get_infield_statistics(train_y, y_trainPred, y_trainProb)
+        testStats = get_infield_statistics(test_y, y_pred, y_predProb)
+    if fieldModelType in "Outfield":
+        trainStats = get_outfield_statistics(train_y, y_trainPred, y_trainProb)
+        testStats = get_outfield_statistics(test_y, y_pred, y_predProb)
 
     if (config['LOGGING']['Logs'] == 'True'):
         print("logging statistics...")
         logs.logModel("SVM", svm, trainStats, testStats, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
-                   ["Regularization Constant: ", rC, "Kernel Type: ", kernel, "Kernel Degree", degree, "Kernel Coefficient (gamma): ", gamma, "Independent Term in Kernel (coef0): ", coef0])
+                   ["Regularization Constant: ", rC, "Kernel Type: ", kernel, "Kernel Degree", degree, "Kernel Coefficient (gamma): ", gamma, "Independent Term in Kernel (coef0): ", coef0], fieldModelType)
     if (config['LOGGING']['Debug'] == 'True'):
         print("printing statistics...")
         logs.printModel("SVM", svm, trainStats, testStats, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
-                    ["Regularization Constant: ", rC, "Kernel Type: ", kernel, "Kernel Degree", degree, "Kernel Coefficient (gamma): ", gamma, "Independent Term in Kernel (coef0): ", coef0])
+                    ["Regularization Constant: ", rC, "Kernel Type: ", kernel, "Kernel Degree", degree, "Kernel Coefficient (gamma): ", gamma, "Independent Term in Kernel (coef0): ", coef0], fieldModelType)
     if (config['LOGGING']['Excel'] == 'True'):
         print("exporting statistics to Excel...")
         # this because there is an error with the AUC calculations for SVM Models
@@ -292,7 +310,7 @@ def runSVM(train_x, train_y, test_x, test_y, rC, kernel, degree, gamma, coef0):
         testStat.append(testStats[3])
         testStat.append([0,0])
         logs.ExcelModel("SVM", svm, trainStat, testStat, [train_x, train_y, test_x, test_y, y_trainPred, y_pred],
-                        {"Regularization Constant":rC,"Kernel Type":kernel,"Kernel Degree":degree,"Kernel Coefficient (gamma)":gamma,"Independent Term in Kernel (coef0)":coef0})
+                        {"Regularization Constant":rC,"Kernel Type":kernel,"Kernel Degree":degree,"Kernel Coefficient (gamma)":gamma,"Independent Term in Kernel (coef0)":coef0}, fieldModelType)
 
     print("done!")
 
@@ -380,13 +398,14 @@ def convertAngleToSlice(angle):
         return 5
 
 def colsum(arr, n, m):
-    coll = [0,0,0,0,0]
+    coll = [0] * len(arr)
     for i in range(n):
         su = 0;
         for j in range(m):
             su += arr[j][i]
         coll[i] = su/m
     return coll 
+
 
 
 def measurePerformance(predictions, test_y):
@@ -539,12 +558,76 @@ def get_infield_statistics(pred, y_test, probs):
         auc = "Error"
     return accuracy, averageError, recall, f1, auc
 
+
+# Function for getting statistics of an infield zone model
+# Inputs:
+    # pred: predicted values
+    # y_test: actual values
+# Output:
+    # accuracy
+def get_outfield_statistics(pred, y_test, probs):
+    truearr  = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    falsearr = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+    totalError = 0
+
+    index = 0
+    for i in pred:
+        if y_test[index] == i:
+            truearr[i-1] += 1
+        else:
+            falsearr[i-1] += 1
+            error = abs(i - y_test[index])
+            totalError += error
+        index += 1
+
+    totalTrue = sum(truearr)
+    accuracy = totalTrue / len(y_test)
+
+    # Calculate Recall
+    recall = []
+    for i in range(len(truearr)):
+
+        try:
+            recall.append(truearr[i] / (truearr[i] + falsearr[i]))
+        except ZeroDivisionError:
+            recall.append("No Values")
+    averageError = totalError / len(y_test)
+
+    # Calculate F1 Scores
+    f1_micro = f1_score(y_test, pred, average='micro')
+    f1_macro = f1_score(y_test, pred, average='macro')
+    f1_weighted = f1_score(y_test, pred, average='weighted')
+    f1 = [f1_micro, f1_macro, f1_weighted]
+
+    # For AUC, we need to binarize the labels for multiclass scenario
+    y_true_binarized = label_binarize(y_test, classes=[6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
+
+    # AUC (One-vs-Rest)
+    # Since AUC is typically used for binary classification, we apply it in a One-vs-Rest manner for multiclass
+    try:
+        auc_macro = roc_auc_score(y_true_binarized, probs, average='macro', multi_class='ovr')
+        auc_weighted = roc_auc_score(y_true_binarized, probs, average='weighted', multi_class='ovr')
+        auc = [auc_macro, auc_weighted]
+    except:
+        auc = "Error"
+    return accuracy, averageError, recall, f1, auc
+
+
 # will split the data given from the DataFram dF and also compute stats on the splits
 # This allows it to be run multiple times
-def modelDataSplitting(dF, randomState, testSize, dFType):
+def modelDataSplitting(dF, randomState, testSize, dFType, fieldModelType):
 
-    if("False" in config['DATA']['USE_NEW_PREPROCESSING']):
-        Y = dF["FieldSlice"]
+    if("False" in config['DATA']['USE_NEW_PREPROCESSING']):        
+        if fieldModelType in "Infield":
+            trainingClassSplit = [0, 0, 0, 0, 0] # Section 1 - 5 (5 different sections)
+            testingClassSplit = [0, 0, 0, 0, 0]
+            Y = dF["FieldSlice"]
+        if fieldModelType in "Outfield":
+            trainingClassSplit = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] # Section 6 - 20 (15 different sections)
+            testingClassSplit = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            Y = dF["FieldSection"]
+            
         X = dF[json.loads(config.get('TRAIN',dFType))]
         #X = dF[specific_columns] # pitcher averages
         originalNotNormX = X
@@ -554,12 +637,9 @@ def modelDataSplitting(dF, randomState, testSize, dFType):
         # adb_model = adb.fit(xTrain, yTrain)
 
         # calculate split information:
-        trainingClassSplit = [0, 0, 0, 0, 0]
         for i in yTrain:
             trainingClassSplit[i-1] += 1
 
-        
-        testingClassSplit = [0, 0, 0, 0, 0]
         for i in yTest:
             testingClassSplit[i-1] += 1
 
@@ -601,4 +681,3 @@ def modelDataSplitting(dF, randomState, testSize, dFType):
             
     return xTrain, xTest, yTrain, yTest
     # GroupKFold: (avoids putting data from the same group in the test set -- useful for Pitcher/Batter ID when we implement that.)
-

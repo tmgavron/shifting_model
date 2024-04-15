@@ -50,23 +50,32 @@ def trainModels(infieldDataFrame, outfieldDataFrame):
         runCount = 1
         print("Not Testing")
     for j in range(runCount):
-            xTrain, xTest, yTrain, yTest = ModelUtil.modelDataSplitting(infieldDataFrame, j, 0.25,'InfieldTrainingFilter')
+            xTrain, xTest, yTrain, yTest = ModelUtil.modelDataSplitting(infieldDataFrame, j, 0.25,'InfieldTrainingFilter', 'Infield')
+            xoTrain, xoTest, yoTrain, yoTest = ModelUtil.modelDataSplitting(outfieldDataFrame, j, 0.25,'InfieldTrainingFilter', 'Outfield')
 
             if("True" in config['MODELS']['DTC']):
                 dtOutput = ModelUtil.runDT(xTrain, yTrain, xTest, yTest, max_depth, max_features, max_leaf_nodes)
-                models["DT"] = dtOutput
+                dtoOutput = ModelUtil.runDT(xoTrain, yoTrain, xoTest, yoTest, max_depth, max_features, max_leaf_nodes)
+                models["DTI"] = dtOutput
+                models["DTO"] = dtoOutput
                 if ("True" in config['DATA']['Pickle']):
                     # Save the model to a file
-                    with open('Models/DecisionTree.pkl', 'wb') as file:
+                    with open('Models/InfieldDecisionTree.pkl', 'wb') as file:
                         pickle.dump(dtOutput, file)
+                    with open('Models/OutfieldDecisionTree.pkl', 'wb') as file:
+                        pickle.dump(dtoOutput, file)
 
             if("True" in config['MODELS']['NB']):   
-                nbOutput = ModelUtil.runNB(xTrain, yTrain, xTest, yTest, var_smoothing)
-                models["NB"] = nbOutput
+                nbOutput = ModelUtil.runNB(xTrain, yTrain, xTest, yTest, var_smoothing, 'Infield')
+                nboOutput = ModelUtil.runNB(xTrain, yTrain, xTest, yTest, var_smoothing, 'Outfield')
+                models["NBI"] = nbOutput
+                models["NBO"] = nboOutput
                 if ("True" in config['DATA']['Pickle']):
                     # Save the model to a file
-                    with open('Models/NaiveBayes.pkl', 'wb') as file:
+                    with open('Models/InfieldNaiveBayes.pkl', 'wb') as file:
                         pickle.dump(nbOutput, file)
+                    with open('Models/OutfieldNaiveBayes.pkl', 'wb') as file:
+                        pickle.dump(nboOutput, file)
 
             if("True" in config['MODELS']['LR']):
                 logRegOutput = ModelUtil.runLogReg(xTrain, yTrain, xTest, yTest, lr, e)
@@ -77,12 +86,16 @@ def trainModels(infieldDataFrame, outfieldDataFrame):
                         pickle.dump(logRegOutput, file)
 
             if("True" in config['MODELS']['SVM']):
-                svmOutput = ModelUtil.runSVM(xTrain, yTrain, xTest, yTest, rC, kernel, degree, gamma, coef0)
-                models["SVM"] = svmOutput
+                svmOutput = ModelUtil.runSVM(xTrain, yTrain, xTest, yTest, rC, kernel, degree, gamma, coef0, 'Infield')
+                svmoOutput = ModelUtil.runSVM(xTrain, yTrain, xTest, yTest, rC, kernel, degree, gamma, coef0, 'Outfield')
+                models["SVMI"] = svmOutput
+                models["SVMO"] = svmoOutput
                 if ("True" in config['DATA']['Pickle']):
                     # Save the model to a file
-                    with open('Models/SVM.pkl', 'wb') as file:
+                    with open('Models/InfieldSVM.pkl', 'wb') as file:
                         pickle.dump(svmOutput, file)
+                    with open('Models/OutfieldSVM.pkl', 'wb') as file:
+                        pickle.dump(svmoOutput, file)
 
             # if("True" in config['MODELS']['RF']):
             #     for i in range(0, len(trainIn)):
@@ -94,24 +107,36 @@ def loadModels():
     models = {}
     # Load the models from the files
     if("True" in config['MODELS']['DTC']):
-        with open('Models/DecisionTree.pkl', 'rb') as file:
+        with open('Models/InfieldDecisionTree.pkl', 'rb') as file:
             dt = pickle.load(file)
-            models["DT"] = dt
+            models["DTI"] = dt
+        with open('Models/OutfieldDecisionTree.pkl', 'rb') as file:
+            dto = pickle.load(file)
+            models["DTO"] = dto
 
     if("True" in config['MODELS']['NB']):   
-        with open('Models/NaiveBayes.pkl', 'rb') as file:
+        with open('Models/InfieldNaiveBayes.pkl', 'rb') as file:
             nb = pickle.load(file)
-            models["NB"] = nb
+            models["NBI"] = nb
+        with open('Models/OutfieldNaiveBayes.pkl', 'rb') as file:
+            nbo = pickle.load(file)
+            models["NBO"] = nbo
 
     if("True" in config['MODELS']['LR']):
-        with open('Models/LogRegression.pkl', 'rb') as file:
+        with open('Models/InfieldLogRegression.pkl', 'rb') as file:
             lr = pickle.load(file)
-            models["LR"] = lr
+            models["LRI"] = lr
+        with open('Models/OutfieldLogRegression.pkl', 'rb') as file:
+            lro = pickle.load(file)
+            models["LRO"] = lro
 
     if("True" in config['MODELS']['SVM']):
-        with open('Models/SVM.pkl', 'rb') as file:
+        with open('Models/InfieldSVM.pkl', 'rb') as file:
             svm = pickle.load(file)
-            models["SVM"] = svm
+            models["SVMI"] = svm
+        with open('Models/OutfieldSVM.pkl', 'rb') as file:
+            svmo = pickle.load(file)
+            models["SVMO"] = svmo
     
     return models
 
@@ -119,9 +144,10 @@ def loadModels():
 def outputPitcherAverages(data, pitchingAveragesDF, models):
     predictionKey = []
     predictions = []
+    predictionso = []
     for index in range(data.shape[0]):
         if index != 0:
-            averageProbs, error = predictSinglePitcherStat(data.iloc[index], models) 
+            averageProbs, averageProbso, error = predictSinglePitcherStat(data.iloc[index], models) 
             if error == True:
                 print(pitchingAveragesDF.iloc[index]["Pitcher"])
             else:
@@ -132,55 +158,67 @@ def outputPitcherAverages(data, pitchingAveragesDF, models):
 
                 predictionKey.append([player,pitch,batterSide,team])
                 predictions.append(averageProbs)
+                predictionso.append(averageProbso)
 
     # batch_image_to_excel.create_excel() 
 
     # predictions holds the model prediction outputs
     # predictionKey holds the player, pitch, and batter side information for the corresponding index in the predictions
-    return predictionKey, predictions
+    return predictionKey, predictions, predictionso
 
 def predictSinglePitcherStat(dataPoint, models):
-    averageProbs= []
+    averageProbs = []
+    averageProbso= []
     modelTypeCount = 0
     averageProbs.append([0,0,0,0,0])
+    averageProbso.append([0,0,0,0,0,0,0,0,0,0,0,0,0,0,0])
     error = False
     # For each selected model (config), add in the predicted probabilities
     if("True" in config['MODELS']['DTC']):
-        dt = models["DT"][0]
+        dt = models["DTI"][0]
+        dto = models["DTO"][0]
         try:
             averageProbs += dt.predict_proba([dataPoint])[0]
+            averageProbso += dto.predict_proba([dataPoint])[0]
             modelTypeCount += 1
         except:
             error = True
 
     if("True" in config['MODELS']['NB']):   
-        nb = models["NB"][0]
+        nb = models["NBI"][0]
+        nbo = models["NBO"][0]
         try:
             averageProbs += nb.predict_proba([dataPoint])[0]
+            averageProbso += nbo.predict_proba([dataPoint])[0]
             modelTypeCount += 1
         except:
             error = True
 
     if("True" in config['MODELS']['LR']):    
-        logReg = models["LR"][0]
+        logReg = models["LRI"][0]
+        logRego = models["LRO"][0]
         try:
             averageProbs += logReg.predict_proba([dataPoint])[0]
+            averageProbso += logRego.predict_proba([dataPoint])[0]
             modelTypeCount += 1
         except:
             error = True
 
     if("True" in config['MODELS']['SVM']):
-        svm = models["SVM"][0]
+        svm = models["SVMI"][0]
+        svmo = models["SVMO"][0]
         try:
             averageProbs += svm.predict_proba([dataPoint])[0]
+            averageProbso += svmo.predict_proba([dataPoint])[0]
             modelTypeCount += 1
         except:
             error = True
 
     # Average the selected model's probabilities 
     averageProbs = averageProbs / modelTypeCount
+    averageProbso = averageProbso / modelTypeCount
 
-    return averageProbs, error
+    return averageProbs, averageProbso, error
 
 
 # Run this every monday:
@@ -194,7 +232,9 @@ cur, conn = DataUtil.databaseConnect()
 averagesData, pitchingAveragesDF = DataUtil.getPitcherAverages(cur, infieldDataFrame, outfieldDataFrame, "None")
 
 # Run pitcher average predictions
-predictionKey, predictions = outputPitcherAverages(averagesData, pitchingAveragesDF, models) # change this to output predictions to the sql database to be read in and visualized when opening that players page
+predictionKey, predictions, predictionso = outputPitcherAverages(averagesData, pitchingAveragesDF, models) # change this to output predictions to the sql database to be read in and visualized when opening that players page
+
+predictions = predictions+predictionso
 
 # write to defensive_shift_model_values view 
 DataUtil.writePitcherAverages(cur, conn, predictionKey, predictions)

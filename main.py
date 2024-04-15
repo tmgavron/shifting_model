@@ -54,8 +54,8 @@ def trainModels(infieldDataFrame, outfieldDataFrame):
             xoTrain, xoTest, yoTrain, yoTest = ModelUtil.modelDataSplitting(outfieldDataFrame, j, 0.25,'InfieldTrainingFilter', 'Outfield')
 
             if("True" in config['MODELS']['DTC']):
-                dtOutput = ModelUtil.runDT(xTrain, yTrain, xTest, yTest, max_depth, max_features, max_leaf_nodes)
-                dtoOutput = ModelUtil.runDT(xoTrain, yoTrain, xoTest, yoTest, max_depth, max_features, max_leaf_nodes)
+                dtOutput = ModelUtil.runDT(xTrain, yTrain, xTest, yTest, max_depth, max_features, max_leaf_nodes, "Infield")
+                dtoOutput = ModelUtil.runDT(xoTrain, yoTrain, xoTest, yoTest, max_depth, max_features, max_leaf_nodes, "Outfield")
                 models["DTI"] = dtOutput
                 models["DTO"] = dtoOutput
                 if ("True" in config['DATA']['Pickle']):
@@ -67,7 +67,7 @@ def trainModels(infieldDataFrame, outfieldDataFrame):
 
             if("True" in config['MODELS']['NB']):   
                 nbOutput = ModelUtil.runNB(xTrain, yTrain, xTest, yTest, var_smoothing, 'Infield')
-                nboOutput = ModelUtil.runNB(xTrain, yTrain, xTest, yTest, var_smoothing, 'Outfield')
+                nboOutput = ModelUtil.runNB(xoTrain, yoTrain, xoTest, yoTest, var_smoothing, 'Outfield')
                 models["NBI"] = nbOutput
                 models["NBO"] = nboOutput
                 if ("True" in config['DATA']['Pickle']):
@@ -78,16 +78,20 @@ def trainModels(infieldDataFrame, outfieldDataFrame):
                         pickle.dump(nboOutput, file)
 
             if("True" in config['MODELS']['LR']):
-                logRegOutput = ModelUtil.runLogReg(xTrain, yTrain, xTest, yTest, lr, e)
-                models["LR"] = logRegOutput
+                logRegOutput = ModelUtil.runLogReg(xTrain, yTrain, xTest, yTest, lr, e, "Infield")
+                logRegoOutput = ModelUtil.runLogReg(xoTrain, yoTrain, xoTest, yoTest, lr, e, "Outfield")
+                models["LRI"] = logRegOutput
+                models["LRO"] = logRegoOutput
                 if ("True" in config['DATA']['Pickle']):
                     # Save the model to a file
-                    with open('Models/LogRegression.pkl', 'wb') as file:
+                    with open('Models/InfieldLogRegression.pkl', 'wb') as file:
                         pickle.dump(logRegOutput, file)
+                    with open('Models/OutfieldLogRegression.pkl', 'wb') as file:
+                        pickle.dump(logRegoOutput, file)
 
             if("True" in config['MODELS']['SVM']):
                 svmOutput = ModelUtil.runSVM(xTrain, yTrain, xTest, yTest, rC, kernel, degree, gamma, coef0, 'Infield')
-                svmoOutput = ModelUtil.runSVM(xTrain, yTrain, xTest, yTest, rC, kernel, degree, gamma, coef0, 'Outfield')
+                svmoOutput = ModelUtil.runSVM(xoTrain, yoTrain, xoTest, yoTest, rC, kernel, degree, gamma, coef0, 'Outfield')
                 models["SVMI"] = svmOutput
                 models["SVMO"] = svmoOutput
                 if ("True" in config['DATA']['Pickle']):

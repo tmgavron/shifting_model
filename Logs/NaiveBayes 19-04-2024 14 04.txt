@@ -1,0 +1,56 @@
+Model Type: NaiveBayes
+
+Training Size = 41841
+Testing Size = 13947
+
+Training Accuracy = 0.29260772926077294
+Testing Accuracy = 0.2903133290313329
+
+Training Average Error = 1.0774121077412109
+Testing Average Error = 1.0760020076002008
+
+Training Recall = [0.33870527178366566, 0.22531715388858245, 0.30010823575715834, 0.38890855457227136, 0.19308414951029382]
+Testing Recall = [0.3441666666666667, 0.22665179816002232, 0.2869864981327205, 0.3909479686386315, 0.18768679019725046]
+
+Training f1 (micro, macro, weighted) = [0.29260772926077294, 0.28728949738602694, 0.29613422416887397]
+Testing f1 (micro, macro, weighted) = [0.2903133290313329, 0.28489349100104466, 0.2941094686659257]
+
+Training auc (macro, weighted) = [0.980444649298537, 0.9758178694038971]
+Testing auc (macro, weighted) = [0.9805549158057986, 0.9762483417851693]
+
+Hyper-Parameters: 
+
+Var Smoothing: 1e-09
+
+Accuracy Score for Predicting on Training Data: 0.2926
+Accuracy Score for Predicting on Test Data: 0.2903
+
+Overall Average Probabilities
+-------------------------------------
+Section 1: 20.81%
+Section 2: 22.03%
+Section 3: 24.55%
+Section 4: 21.24%
+Section 5: 11.37%
+
+Field Slice Counts for Training Data
+--------------------------------------------------
+Section	Truth	Prediction
+1		7322		8348
+2		10878		7692
+3		10163		12048
+4		8475		10489
+5		5003		3264
+Amount Correct: 12243
+Amount Incorrect: 29598
+
+Field Slice Counts for Testing Data
+--------------------------------------------------
+Section	Truth	Prediction
+1		2400		2824
+2		3587		2599
+3		3481		3938
+4		2806		3519
+5		1673		1067
+Amount Correct: 4049
+Amount Incorrect: 9898
